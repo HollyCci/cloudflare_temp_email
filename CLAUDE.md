@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Structure
 
 - **Backend**: `worker/` — Cloudflare Workers API using Hono framework. Entry: `worker/src/worker.ts`, APIs under `worker/src/*_api/`.
-- **Frontend**: `frontend/` — Vue 3 + Naive UI app deployed to Cloudflare Pages. Routes in `frontend/src/router/`.
+- **Frontend**: `frontend/` — React 19 + HeroUI Pro app deployed to Cloudflare Pages. Routes in `frontend/src/main.tsx`.
 - **Pages middleware**: `pages/functions/_middleware.js` — Routes API calls to Worker backend.
 - **Mail parser**: `mail-parser-wasm/` — Rust WASM email parser.
 - **SMTP/IMAP proxy**: `smtp_proxy_server/` — Python proxy server.
@@ -42,7 +42,7 @@ The Docker frontend serves over **HTTPS** (self-signed cert) with Vite proxy to 
 
 Key patterns for browser tests:
 - Frontend hashes passwords with SHA-256 (`crypto.subtle`) before sending — API test registration must use pre-hashed passwords if UI login is needed.
-- VueUse `useStorage('key', '')` with string default uses **raw string** serialization — set localStorage with raw value, not `JSON.stringify()`.
+- Address JWT / user JWT in localStorage are **raw strings**, not `JSON.stringify()`.
 - WebAuthn browser tests use CDP virtual authenticator (`WebAuthn.enable` + `WebAuthn.addVirtualAuthenticator`).
 
 ## Architecture
@@ -69,13 +69,13 @@ Cloudflare Email Worker entry: `email()` in `worker/src/email/index.ts`. Process
 2. Auto-reply if configured → forward if configured → webhook if enabled
 3. Store in D1 database
 
-### Frontend State (`frontend/src/store/index.js`, `frontend/src/api/index.js`)
+### Frontend State (`frontend/src/store/app-store.tsx`, `frontend/src/api/client.ts`)
 
-Global state via VueUse `useStorage` for persistence. The `api` module wraps axios with auto-attached auth headers and fingerprinting. API base URL comes from `VITE_API_BASE` env var (empty = same origin).
+Global state is React context plus raw `localStorage` strings (same as the previous VueUse `useStorage` format). The `api` module wraps axios with auto-attached auth headers and fingerprinting. API base URL comes from `VITE_API_BASE` env var (empty = same origin).
 
 ## Coding Style
 
-- `worker/` uses TypeScript + ESLint; `frontend/` uses Vue SFCs.
+- `worker/` uses TypeScript + ESLint; `frontend/` uses React + HeroUI.
 - Keep existing naming patterns: `*_api/` folders, `utils/`, `models/`.
 - ESM imports only (`type: module`).
 

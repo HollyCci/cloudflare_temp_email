@@ -10,6 +10,9 @@
 
 ### Features
 
+- feat: |Frontend| Replace Vue 3 + Naive UI with React 19 + HeroUI Pro for inbox, account, and admin core flows
+- feat: |Frontend| Align the inbox with the HeroUI Pro Email template: folder sidebar, message list, and detail pane
+
 ### Bug Fixes
 
 ### Improvements

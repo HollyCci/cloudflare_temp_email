@@ -10,6 +10,9 @@
 
 ### Features
 
+- feat: |Frontend| 将 Vue 3 + Naive UI 替换为 React 19 + HeroUI Pro，覆盖收件箱、用户账户与管理端核心流程
+- feat: |Frontend| 收件箱对齐 HeroUI Pro Email 模版：侧栏文件夹、邮件列表与详情分栏
+
 ### Bug Fixes
 
 ### Improvements

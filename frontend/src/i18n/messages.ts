@@ -1,81 +1,168 @@
-import { MESSAGE_REGISTRY, getMessageSource } from './message-registry'
+import type { Locale } from './locale'
 
-import type { MessageKey, MessageNamespace } from './message-registry'
-
-import { deMessages } from './locales/source/de'
-import { esMessages } from './locales/source/es'
-import { jaMessages } from './locales/source/ja'
-import { ptBRMessages } from './locales/source/ptBR'
-
-import type { SupportedLocale } from './locale-registry'
-
-type LocaleTree = Record<string, unknown>
-type SourceLocale = Extract<SupportedLocale, 'en' | 'zh'>
-type AdditionalLocale = Exclude<SupportedLocale, SourceLocale>
-
-const additionalLocaleSources: Record<AdditionalLocale, Record<string, string>> = {
-  es: esMessages,
-  'pt-BR': ptBRMessages,
-  ja: jaMessages,
-  de: deMessages,
+const zh = {
+  brand: 'wocc mail',
+  inbox: '收件箱',
+  account: '账户',
+  admin: '管理',
+  logout: '退出',
+  language: '语言',
+  refresh: '刷新',
+  createAddress: '新建邮箱',
+  openMail: '打开信件',
+  searchMail: '搜索主题或正文',
+  noMailTitle: '钩子上还没有信',
+  noMailDescription: '用这个地址去注册，邮件会落在这里。',
+  noAddressTitle: '先拿一个地址',
+  noAddressDescription: '登录账户后可以创建 cursor.wocc.rs 邮箱。',
+  goAccount: '去登录',
+  signIn: '登录',
+  signUp: '注册',
+  email: '邮箱',
+  password: '密码',
+  verifyCode: '验证码',
+  sendCode: '发送验证码',
+  pleaseInput: '请填写邮箱和密码',
+  pleaseInputEmail: '请先填写邮箱',
+  pleaseInputCode: '请填写验证码',
+  loginFailed: '登录失败',
+  registerFailed: '注册失败',
+  pleaseLogin: '注册成功，请登录',
+  userEmail: '账户邮箱',
+  boundAddresses: '已绑定地址',
+  emptyAddresses: '还没有绑定的邮箱地址',
+  openInbox: '进入收件箱',
+  copyJwt: '复制凭证',
+  copied: '已复制',
+  create: '创建',
+  addressName: '用户名',
+  domain: '域名',
+  generating: '生成中',
+  randomName: '随机用户名',
+  created: '已创建',
+  addressCredential: '邮箱凭证',
+  close: '关闭',
+  adminPassword: '管理员密码',
+  adminLogin: '管理员登录',
+  adminHint: '用管理员密码创建和查看地址。',
+  sitePassword: '站点密码',
+  sitePasswordHint: '此站点需要访问密码。',
+  continue: '继续',
+  addresses: '地址列表',
+  delete: '删除',
+  loadMore: '加载更多',
+  from: '发件人',
+  to: '收件人',
+  receivedAt: '时间',
+  loadImages: '加载远程图片',
+  showText: '纯文本',
+  showHtml: 'HTML',
+  unread: '未读',
+  markRead: '标为已读',
+  markUnread: '标为未读',
+  noSubject: '（无主题）',
+  settingsFailed: '无法加载站点设置',
+  noDomains: '没有可用域名，请检查 Worker 配置',
+  logoutDone: '已退出',
+  fillFields: '请填写用户名和域名',
+  dark: '深色',
+  light: '浅色',
+  currentAddress: '当前地址',
+  none: '未选择',
+  telegramInbox: 'Telegram 收件箱',
+  you: '你',
+  searchPlaceholder: '搜索...',
+  noConversations: '这里还没有邮件',
+  noConversationsHint: '新邮件到达后会显示在这里。',
+  nothingOpen: '没有打开的邮件',
+  nothingOpenHint: '从左侧列表选一封来阅读。',
+  toMe: '发给我',
+  previous: '上一封',
+  next: '下一封',
+  backToList: '返回列表',
 }
 
-const setNestedValue = (target: LocaleTree, path: string, value: unknown) => {
-  const segments = path.split('.')
-  let current: LocaleTree = target
-
-  for (const segment of segments.slice(0, -1)) {
-    const existing = current[segment]
-    if (typeof existing === 'object' && existing !== null && !Array.isArray(existing)) {
-      current = existing as LocaleTree
-      continue
-    }
-
-    current[segment] = {}
-    current = current[segment] as LocaleTree
-  }
-
-  current[segments.at(-1) as string] = value
+const en: typeof zh = {
+  brand: 'wocc mail',
+  inbox: 'Inbox',
+  account: 'Account',
+  admin: 'Admin',
+  logout: 'Log out',
+  language: 'Language',
+  refresh: 'Refresh',
+  createAddress: 'New address',
+  openMail: 'Open message',
+  searchMail: 'Search subject or body',
+  noMailTitle: 'Nothing on the hook',
+  noMailDescription: 'Use this address to sign up somewhere. Mail lands here.',
+  noAddressTitle: 'Get an address first',
+  noAddressDescription: 'Sign in to create a cursor.wocc.rs mailbox.',
+  goAccount: 'Go to account',
+  signIn: 'Sign in',
+  signUp: 'Register',
+  email: 'Email',
+  password: 'Password',
+  verifyCode: 'Verification code',
+  sendCode: 'Send code',
+  pleaseInput: 'Enter email and password',
+  pleaseInputEmail: 'Enter an email first',
+  pleaseInputCode: 'Enter the verification code',
+  loginFailed: 'Sign in failed',
+  registerFailed: 'Registration failed',
+  pleaseLogin: 'Registered. Sign in to continue.',
+  userEmail: 'Account email',
+  boundAddresses: 'Bound addresses',
+  emptyAddresses: 'No bound addresses yet',
+  openInbox: 'Open inbox',
+  copyJwt: 'Copy credential',
+  copied: 'Copied',
+  create: 'Create',
+  addressName: 'Local part',
+  domain: 'Domain',
+  generating: 'Generating',
+  randomName: 'Random name',
+  created: 'Created',
+  addressCredential: 'Address credential',
+  close: 'Close',
+  adminPassword: 'Admin password',
+  adminLogin: 'Admin sign in',
+  adminHint: 'Use the admin password to create and inspect addresses.',
+  sitePassword: 'Site password',
+  sitePasswordHint: 'This site requires an access password.',
+  continue: 'Continue',
+  addresses: 'Addresses',
+  delete: 'Delete',
+  loadMore: 'Load more',
+  from: 'From',
+  to: 'To',
+  receivedAt: 'Received',
+  loadImages: 'Load remote images',
+  showText: 'Plain text',
+  showHtml: 'HTML',
+  unread: 'Unread',
+  markRead: 'Mark read',
+  markUnread: 'Mark unread',
+  noSubject: '(No subject)',
+  settingsFailed: 'Could not load site settings',
+  noDomains: 'No domains found. Check Worker settings.',
+  logoutDone: 'Signed out',
+  fillFields: 'Enter a name and domain',
+  dark: 'Dark',
+  light: 'Light',
+  currentAddress: 'Current address',
+  none: 'None',
+  telegramInbox: 'Telegram inbox',
+  you: 'You',
+  searchPlaceholder: 'Search...',
+  noConversations: 'No conversations here',
+  noConversationsHint: 'When messages land in this inbox, they will show up here.',
+  nothingOpen: 'Nothing open',
+  nothingOpenHint: 'Pick a conversation from the inbox to read it here.',
+  toMe: 'to me',
+  previous: 'Previous',
+  next: 'Next',
+  backToList: 'Back to list',
 }
 
-const buildSourceLocaleMessages = (locale: SourceLocale) => {
-  const messages: LocaleTree = {}
-
-  for (const namespace of Object.keys(MESSAGE_REGISTRY) as MessageNamespace[]) {
-    const keys = Object.keys(MESSAGE_REGISTRY[namespace]) as MessageKey<typeof namespace>[]
-    for (const key of keys) {
-      const message = getMessageSource(namespace, key, locale)
-      if (message === undefined) continue
-      setNestedValue(messages, `${namespace}.${key}`, message)
-    }
-  }
-
-  return messages
-}
-
-const buildAdditionalLocaleMessages = (locale: AdditionalLocale) => {
-  const messages: LocaleTree = {}
-
-  for (const [key, value] of Object.entries(additionalLocaleSources[locale])) {
-    setNestedValue(messages, key, value)
-  }
-
-  return messages
-}
-
-export const I18N_MESSAGES: Record<SupportedLocale, LocaleTree> = {
-  zh: buildSourceLocaleMessages('zh'),
-  en: buildSourceLocaleMessages('en'),
-  es: buildAdditionalLocaleMessages('es'),
-  'pt-BR': buildAdditionalLocaleMessages('pt-BR'),
-  ja: buildAdditionalLocaleMessages('ja'),
-  de: buildAdditionalLocaleMessages('de'),
-}
-
-export const getLocalizedMessage = (
-  locale: AdditionalLocale,
-  namespace: MessageNamespace,
-  key: string,
-) => {
-  return additionalLocaleSources[locale][`${namespace}.${key}`]
-}
+export const messages: Record<Locale, typeof zh> = { zh, en }
+export type MessageKey = keyof typeof zh

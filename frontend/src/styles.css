@@ -1,0 +1,25 @@
+@import "tailwindcss";
+@import "@heroui/styles";
+@import "@heroui-pro/react/css";
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  background-color: var(--background);
+}
+
+.mail-body :where(a) {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (hover: none) and (pointer: coarse) and (max-width: 1024px) {
+  :where(input, textarea, select, [contenteditable="true"]) {
+    font-size: 16px !important;
+  }
+}

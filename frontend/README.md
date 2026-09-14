@@ -1,29 +1,30 @@
-# cloudflare_temp_email
+# Frontend
 
-This template should help get you started developing with Vue 3 in Vite.
+React 19 + Vite + Tailwind CSS v4 + HeroUI Pro.
 
-## Recommended IDE Setup
-
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vitejs.dev/config/).
-
-## Project Setup
+## Setup
 
 ```sh
-npm install
+pnpm install
 ```
 
-### Compile and Hot-Reload for Development
+HeroUI Pro artifacts are downloaded with the same `hpsetup` flow as the internal Matrix app. After `pnpm install`, if `@heroui-pro/react` CSS is missing:
 
 ```sh
-npm run dev
+npx hpsetup@latest <HEROUI_SETUP_KEY> react
 ```
 
-### Compile and Minify for Production
+## Develop
 
 ```sh
-npm run build
+pnpm dev
+```
+
+Set `VITE_API_BASE` in `.env.local` (see `.env.example`). Runtime override lives in `index.html` as `#app-config`.
+
+## Build / deploy
+
+```sh
+pnpm build
+pnpm deploy
 ```
