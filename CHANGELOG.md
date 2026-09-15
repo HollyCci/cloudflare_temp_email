@@ -17,6 +17,8 @@
 
 ### Improvements
 
+- feat: |Frontend| 异步按钮在按下时立即进入 pending，请求结束后短暂确认，避免空白等待和连点
+
 ## v1.12.0
 
 ### Features

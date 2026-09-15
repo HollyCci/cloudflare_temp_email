@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Button, Card, Input, Label, Tabs, TextField, toast } from '@heroui/react'
+import { Card, Input, Label, Spinner, Tabs, TextField, toast } from '@heroui/react'
 import { EmptyState, ListView } from '@heroui-pro/react'
 import { Envelope } from '@gravity-ui/icons'
 import { useNavigate } from 'react-router'
+import { ActionButton } from '../components/ActionButton'
 import { AppShell, PageHeader } from '../components/AppShell'
 import { CreateAddressForm } from '../components/CreateAddressForm'
 import { Turnstile } from '../components/Turnstile'
@@ -25,8 +26,8 @@ export function UserPage() {
   const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
   const [cfToken, setCfToken] = useState('')
-  const [pending, setPending] = useState(false)
   const [addresses, setAddresses] = useState<BoundAddress[]>([])
+  const [addressesLoading, setAddressesLoading] = useState(false)
 
   useEffect(() => {
     void api.getUserOpenSettings()
@@ -37,8 +38,10 @@ export function UserPage() {
   const loadAddresses = async () => {
     if (!userJwt) {
       setAddresses([])
+      setAddressesLoading(false)
       return
     }
+    setAddressesLoading(true)
     try {
       const settings = await api.getUserSettings()
       if (settings) setUserSettings({ ...settings, fetched: true })
@@ -46,6 +49,8 @@ export function UserPage() {
       setAddresses(res.results || [])
     } catch (error: any) {
       toast(error.message, { variant: 'danger' })
+    } finally {
+      setAddressesLoading(false)
     }
   }
 
@@ -56,9 +61,8 @@ export function UserPage() {
   const login = async () => {
     if (!email || !password) {
       toast(t('pleaseInput'), { variant: 'danger' })
-      return
+      return false
     }
-    setPending(true)
     try {
       const res = await api.fetch('/user_api/login', {
         method: 'POST',
@@ -71,21 +75,19 @@ export function UserPage() {
       setUserJwt(res.jwt)
     } catch (error: any) {
       toast(error.message || t('loginFailed'), { variant: 'danger' })
-    } finally {
-      setPending(false)
+      return false
     }
   }
 
   const register = async () => {
     if (!email || !password) {
       toast(t('pleaseInput'), { variant: 'danger' })
-      return
+      return false
     }
     if (!code && userOpenSettings.enableMailVerify) {
       toast(t('pleaseInputCode'), { variant: 'danger' })
-      return
+      return false
     }
-    setPending(true)
     try {
       await api.fetch('/user_api/register', {
         method: 'POST',
@@ -100,15 +102,14 @@ export function UserPage() {
       setTab('signin')
     } catch (error: any) {
       toast(error.message || t('registerFailed'), { variant: 'danger' })
-    } finally {
-      setPending(false)
+      return false
     }
   }
 
   const sendCode = async () => {
     if (!email) {
       toast(t('pleaseInputEmail'), { variant: 'danger' })
-      return
+      return false
     }
     try {
       await api.fetch('/user_api/verify_code', {
@@ -118,6 +119,7 @@ export function UserPage() {
       toast(t('sendCode'))
     } catch (error: any) {
       toast(error.message, { variant: 'danger' })
+      return false
     }
   }
 
@@ -128,6 +130,7 @@ export function UserPage() {
       navigate(withLocale('/', locale))
     } catch (error: any) {
       toast(error.message, { variant: 'danger' })
+      return false
     }
   }
 
@@ -158,7 +161,7 @@ export function UserPage() {
                     setPassword={setPassword}
                   />
                   <Turnstile value={cfToken} onChange={setCfToken} />
-                  <Button isPending={pending} onPress={() => void login()}>{t('signIn')}</Button>
+                  <ActionButton onPress={login}>{t('signIn')}</ActionButton>
                 </Tabs.Panel>
                 <Tabs.Panel className="flex flex-col gap-4 pt-4" id="signup">
                   <AuthFields
@@ -173,11 +176,11 @@ export function UserPage() {
                         <Label>{t('verifyCode')}</Label>
                         <Input />
                       </TextField>
-                      <Button variant="outline" onPress={() => void sendCode()}>{t('sendCode')}</Button>
+                      <ActionButton confirm variant="outline" onPress={sendCode}>{t('sendCode')}</ActionButton>
                     </div>
                   ) : null}
                   <Turnstile value={cfToken} onChange={setCfToken} />
-                  <Button isPending={pending} onPress={() => void register()}>{t('signUp')}</Button>
+                  <ActionButton confirm onPress={register}>{t('signUp')}</ActionButton>
                 </Tabs.Panel>
               </Tabs>
             </Card.Content>
@@ -200,7 +203,11 @@ export function UserPage() {
             ) : null}
             <div className="flex flex-col gap-3">
               <h2 className="text-lg font-semibold">{t('boundAddresses')}</h2>
-              {addresses.length === 0 ? (
+              {addressesLoading ? (
+                <div className="flex justify-center py-10">
+                  <Spinner color="current" />
+                </div>
+              ) : addresses.length === 0 ? (
                 <EmptyState>
                   <EmptyState.Header>
                     <EmptyState.Media variant="icon"><Envelope /></EmptyState.Media>
@@ -220,10 +227,11 @@ export function UserPage() {
                           </ListView.Description>
                         </div>
                       </ListView.ItemContent>
-                      <Button size="sm" variant="secondary" onPress={() => void openAddress(Number(row.id))}>
+                      <ActionButton size="sm" variant="secondary" onPress={() => openAddress(Number(row.id))}>
                         {t('openInbox')}
-                      </Button>
-                      <Button
+                      </ActionButton>
+                      <ActionButton
+                        confirm
                         size="sm"
                         variant="ghost"
                         onPress={async () => {
@@ -233,11 +241,12 @@ export function UserPage() {
                             toast(t('copied'))
                           } catch (error: any) {
                             toast(error.message, { variant: 'danger' })
+                            return false
                           }
                         }}
                       >
                         {t('copyJwt')}
-                      </Button>
+                      </ActionButton>
                     </ListView.Item>
                   )}
                 </ListView>

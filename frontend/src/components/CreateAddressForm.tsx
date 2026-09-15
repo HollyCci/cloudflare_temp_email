@@ -13,6 +13,7 @@ import { api } from '../api/client'
 import { useAppState } from '../store/app-store'
 import { useI18n } from '../i18n'
 import { copyText, randomLocalPart } from '../utils/hash'
+import { ActionButton } from './ActionButton'
 import { Turnstile } from './Turnstile'
 
 type Created = {
@@ -33,32 +34,30 @@ export function CreateAddressForm({
   const [name, setName] = useState('')
   const [domain, setDomain] = useState(openSettings.domains[0]?.value || '')
   const [cfToken, setCfToken] = useState('')
-  const [pending, setPending] = useState(false)
   const [created, setCreated] = useState<Created | null>(null)
 
   const submit = async () => {
     const selectedDomain = domain || openSettings.domains[0]?.value || ''
-      const localPart = name.trim() || randomLocalPart(12)
+    const localPart = name.trim() || randomLocalPart(12)
     if (!selectedDomain) {
       toast(t('fillFields'), { variant: 'danger' })
-      return
+      return false
     }
-    setPending(true)
+    const path = mode === 'admin' ? '/admin/new_address' : '/api/new_address'
+    const body = mode === 'admin'
+      ? {
+          enablePrefix: Boolean(openSettings.prefix),
+          enableRandomSubdomain: false,
+          name: localPart,
+          domain: selectedDomain,
+        }
+      : {
+          name: localPart,
+          domain: selectedDomain,
+          cf_token: cfToken,
+          enableRandomSubdomain: false,
+        }
     try {
-      const path = mode === 'admin' ? '/admin/new_address' : '/api/new_address'
-      const body = mode === 'admin'
-        ? {
-            enablePrefix: Boolean(openSettings.prefix),
-            enableRandomSubdomain: false,
-            name: localPart,
-            domain: selectedDomain,
-          }
-        : {
-            name: localPart,
-            domain: selectedDomain,
-            cf_token: cfToken,
-            enableRandomSubdomain: false,
-          }
       const res = await api.fetch(path, {
         method: 'POST',
         body: JSON.stringify(body),
@@ -81,8 +80,7 @@ export function CreateAddressForm({
       onCreated?.(next)
     } catch (error: any) {
       toast(error.message || t('registerFailed'), { variant: 'danger' })
-    } finally {
-      setPending(false)
+      return false
     }
   }
 
@@ -128,9 +126,9 @@ export function CreateAddressForm({
         >
           {t('randomName')}
         </Button>
-        <Button isPending={pending} onPress={() => void submit()}>
+        <ActionButton confirm onPress={submit}>
           {t('create')}
-        </Button>
+        </ActionButton>
       </div>
       <Modal>
         <Modal.Backdrop isOpen={Boolean(created)} onOpenChange={(open) => !open && setCreated(null)}>
@@ -143,14 +141,16 @@ export function CreateAddressForm({
               <Modal.Body className="flex flex-col gap-3">
                 <p className="text-sm">{created?.address}</p>
                 {created?.jwt ? (
-                  <Button
+                  <ActionButton
+                    confirm
                     variant="secondary"
-                    onPress={() => {
-                      void copyText(created.jwt).then(() => toast(t('copied')))
+                    onPress={async () => {
+                      await copyText(created.jwt)
+                      toast(t('copied'))
                     }}
                   >
                     {t('copyJwt')}
-                  </Button>
+                  </ActionButton>
                 ) : null}
               </Modal.Body>
               <Modal.Footer>

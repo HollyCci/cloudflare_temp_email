@@ -3,6 +3,7 @@ import { Avatar, Button, ScrollShadow, Tooltip } from '@heroui/react'
 import type { Mail } from '../store/types'
 import { useI18n } from '../i18n'
 import { compactTime, getInitials, parseSender } from '../utils/mail'
+import { ActionButton } from './ActionButton'
 import { MailHtml } from './MailHtml'
 
 export function MailDetail({
@@ -24,7 +25,7 @@ export function MailDetail({
   index: number
   total: number
   onBack: () => void
-  onDelete: () => void
+  onDelete: () => void | Promise<void>
   onPrev: () => void
   onNext: () => void
 }) {
@@ -55,7 +56,7 @@ export function MailDetail({
             {canDelete ? (
               <Tooltip>
                 <Tooltip.Trigger>
-                  <Button
+                  <ActionButton
                     isIconOnly
                     aria-label={t('delete')}
                     className="text-muted hover:text-foreground"
@@ -64,7 +65,7 @@ export function MailDetail({
                     onPress={onDelete}
                   >
                     <TrashBin className="size-4" />
-                  </Button>
+                  </ActionButton>
                 </Tooltip.Trigger>
                 <Tooltip.Content>{t('delete')}</Tooltip.Content>
               </Tooltip>

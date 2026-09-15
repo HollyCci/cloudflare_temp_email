@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Button, Card, Input, Label, Tabs, TextField, toast } from '@heroui/react'
+import { Button, Card, Input, Label, Spinner, Tabs, TextField, toast } from '@heroui/react'
 import { ListView } from '@heroui-pro/react'
 import { Envelope } from '@gravity-ui/icons'
+import { ActionButton } from '../components/ActionButton'
 import { AppShell, PageHeader } from '../components/AppShell'
 import { CreateAddressForm } from '../components/CreateAddressForm'
 import { Turnstile } from '../components/Turnstile'
@@ -18,17 +19,22 @@ export function AdminPage() {
   } = useAppState()
   const [password, setPassword] = useState('')
   const [cfToken, setCfToken] = useState('')
-  const [pending, setPending] = useState(false)
   const [addresses, setAddresses] = useState<BoundAddress[]>([])
+  const [listLoading, setListLoading] = useState(false)
   const [offset, setOffset] = useState(0)
   const [count, setCount] = useState(0)
   const needPassword = !showAdminPage || showAdminAuth
 
   const loadAddresses = async (nextOffset = 0) => {
-    const res = await api.fetch(`/admin/address?limit=20&offset=${nextOffset}`)
-    setCount(res.count || 0)
-    setOffset(nextOffset)
-    setAddresses((current) => nextOffset === 0 ? (res.results || []) : [...current, ...(res.results || [])])
+    if (nextOffset === 0) setListLoading(true)
+    try {
+      const res = await api.fetch(`/admin/address?limit=20&offset=${nextOffset}`)
+      setCount(res.count || 0)
+      setOffset(nextOffset)
+      setAddresses((current) => nextOffset === 0 ? (res.results || []) : [...current, ...(res.results || [])])
+    } finally {
+      setListLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -37,7 +43,6 @@ export function AdminPage() {
   }, [needPassword])
 
   const login = async () => {
-    setPending(true)
     try {
       await api.fetch('/open_api/admin_login', {
         method: 'POST',
@@ -50,8 +55,7 @@ export function AdminPage() {
       setShowAdminAuth(false)
     } catch (error: any) {
       toast(error.message, { variant: 'danger' })
-    } finally {
-      setPending(false)
+      return false
     }
   }
 
@@ -78,7 +82,7 @@ export function AdminPage() {
                 <Input />
               </TextField>
               <Turnstile value={cfToken} onChange={setCfToken} />
-              <Button isPending={pending} onPress={() => void login()}>{t('signIn')}</Button>
+              <ActionButton onPress={login}>{t('signIn')}</ActionButton>
             </Card.Content>
           </Card>
         ) : (
@@ -100,58 +104,69 @@ export function AdminPage() {
               </Card>
             </Tabs.Panel>
             <Tabs.Panel className="pt-6" id="list">
-              <ListView
-                aria-label={t('addresses')}
-                items={addresses.map((row) => ({ ...row, id: String(row.id) }))}
-              >
-                {(row) => (
-                  <ListView.Item id={String(row.id)} textValue={row.name}>
-                    <ListView.ItemContent>
-                      <Envelope />
-                      <div className="flex min-w-0 flex-col">
-                        <ListView.Title>{row.name}</ListView.Title>
-                        <ListView.Description>
-                          {row.mail_count || 0} mail
-                        </ListView.Description>
-                      </div>
-                    </ListView.ItemContent>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onPress={async () => {
-                        try {
-                          const res = await api.fetch(`/admin/show_password/${row.id}`)
-                          await copyText(res.jwt)
-                          toast(t('copied'))
-                        } catch (error: any) {
-                          toast(error.message, { variant: 'danger' })
-                        }
-                      }}
-                    >
-                      {t('copyJwt')}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="danger-soft"
-                      onPress={async () => {
-                        try {
-                          await api.fetch(`/admin/delete_address/${row.id}`, { method: 'DELETE' })
-                          setAddresses((items) => items.filter((item) => String(item.id) !== String(row.id)))
-                        } catch (error: any) {
-                          toast(error.message, { variant: 'danger' })
-                        }
-                      }}
-                    >
-                      {t('delete')}
-                    </Button>
-                  </ListView.Item>
-                )}
-              </ListView>
-              {addresses.length < count ? (
-                <Button className="mt-4" variant="outline" onPress={() => void loadAddresses(offset + 20)}>
-                  {t('loadMore')}
-                </Button>
-              ) : null}
+              {listLoading && addresses.length === 0 ? (
+                <div className="flex justify-center py-10">
+                  <Spinner color="current" />
+                </div>
+              ) : (
+                <>
+                  <ListView
+                    aria-label={t('addresses')}
+                    items={addresses.map((row) => ({ ...row, id: String(row.id) }))}
+                  >
+                    {(row) => (
+                      <ListView.Item id={String(row.id)} textValue={row.name}>
+                        <ListView.ItemContent>
+                          <Envelope />
+                          <div className="flex min-w-0 flex-col">
+                            <ListView.Title>{row.name}</ListView.Title>
+                            <ListView.Description>
+                              {row.mail_count || 0} mail
+                            </ListView.Description>
+                          </div>
+                        </ListView.ItemContent>
+                        <ActionButton
+                          confirm
+                          size="sm"
+                          variant="ghost"
+                          onPress={async () => {
+                            try {
+                              const res = await api.fetch(`/admin/show_password/${row.id}`)
+                              await copyText(res.jwt)
+                              toast(t('copied'))
+                            } catch (error: any) {
+                              toast(error.message, { variant: 'danger' })
+                              return false
+                            }
+                          }}
+                        >
+                          {t('copyJwt')}
+                        </ActionButton>
+                        <ActionButton
+                          size="sm"
+                          variant="danger-soft"
+                          onPress={async () => {
+                            try {
+                              await api.fetch(`/admin/delete_address/${row.id}`, { method: 'DELETE' })
+                              setAddresses((items) => items.filter((item) => String(item.id) !== String(row.id)))
+                            } catch (error: any) {
+                              toast(error.message, { variant: 'danger' })
+                              return false
+                            }
+                          }}
+                        >
+                          {t('delete')}
+                        </ActionButton>
+                      </ListView.Item>
+                    )}
+                  </ListView>
+                  {addresses.length < count ? (
+                    <ActionButton className="mt-4" variant="outline" onPress={() => loadAddresses(offset + 20)}>
+                      {t('loadMore')}
+                    </ActionButton>
+                  ) : null}
+                </>
+              )}
             </Tabs.Panel>
           </Tabs>
         )}

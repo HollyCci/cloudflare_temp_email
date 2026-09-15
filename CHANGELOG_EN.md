@@ -17,6 +17,8 @@
 
 ### Improvements
 
+- feat: |Frontend| Show pending immediately on async buttons and a brief confirmation after success, to avoid dead clicks and empty waits
+
 ## v1.12.0
 
 ### Features

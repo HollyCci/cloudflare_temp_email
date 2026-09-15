@@ -20,6 +20,7 @@ export function InboxPage() {
   const [mails, setMails] = useState<Mail[]>([])
   const [query, setQuery] = useState('')
   const [selectedId, setSelectedId] = useState('')
+  const [listLoading, setListLoading] = useState(() => Boolean(jwt))
   const allowRemote = true
 
   useEffect(() => {
@@ -44,12 +45,19 @@ export function InboxPage() {
       setMails(list.results || [])
     } catch (error: any) {
       toast(error.message || t('settingsFailed'), { variant: 'danger' })
+      return false
     }
   }, [jwt, setAddressSettings, t])
 
   useEffect(() => {
-    void load()
-  }, [load])
+    if (!jwt) {
+      setMails([])
+      setListLoading(false)
+      return
+    }
+    setListLoading(true)
+    void load().finally(() => setListLoading(false))
+  }, [jwt, load])
 
   const filtered = useMemo(() => {
     const keyword = query.trim().toLowerCase()
@@ -104,11 +112,12 @@ export function InboxPage() {
           }`}
         >
           <MailList
+            loading={listLoading}
             mails={filtered}
             query={query}
             selectedId={selectedId}
             onQueryChange={setQuery}
-            onRefresh={() => void load()}
+            onRefresh={load}
             onSelect={setSelectedId}
           />
         </div>
@@ -133,6 +142,7 @@ export function InboxPage() {
                   setSelectedId('')
                 } catch (error: any) {
                   toast(error.message, { variant: 'danger' })
+                  throw error
                 }
               }}
               onNext={() => {
