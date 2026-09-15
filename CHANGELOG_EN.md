@@ -18,6 +18,7 @@
 ### Improvements
 
 - feat: |Frontend| Show pending immediately on async buttons and a brief confirmation after success, to avoid dead clicks and empty waits
+- fix: |Frontend| Stop the inbox from refetching forever when the translator function identity changes
 
 ## v1.12.0
 

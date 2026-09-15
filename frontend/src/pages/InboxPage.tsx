@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, toast } from '@heroui/react'
 import { Tray } from '@gravity-ui/icons'
 import { useNavigate, useSearchParams } from 'react-router'
@@ -49,15 +49,24 @@ export function InboxPage() {
     }
   }, [jwt, setAddressSettings, t])
 
+  const loadRef = useRef(load)
+  loadRef.current = load
+
   useEffect(() => {
     if (!jwt) {
       setMails([])
       setListLoading(false)
       return
     }
+    let cancelled = false
     setListLoading(true)
-    void load().finally(() => setListLoading(false))
-  }, [jwt, load])
+    void loadRef.current().finally(() => {
+      if (!cancelled) setListLoading(false)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [jwt])
 
   const filtered = useMemo(() => {
     const keyword = query.trim().toLowerCase()
