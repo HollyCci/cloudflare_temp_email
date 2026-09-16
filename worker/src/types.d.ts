@@ -168,6 +168,7 @@ type ParsedEmailAttachment = {
     mimeType: string,
     content: Uint8Array,
     disposition: string,
+    contentId?: string,
 }
 
 type ParsedEmailContext = {

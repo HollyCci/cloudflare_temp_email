@@ -2,17 +2,27 @@ import { Context } from 'hono'
 
 import { commonParseMail, handleMailListQuery, updateAddressUpdatedAt } from '../common'
 import { resolveRawEmailRow } from '../gzip'
+import type { RawMailRow } from '../models'
+import { embedCidImages } from '../utils/embed_cid'
 
 const toParsedMailRow = async (row: Record<string, unknown>): Promise<Record<string, unknown>> => {
-    const raw = typeof row.raw === 'string' ? row.raw : '';
-    const parsed = raw ? await commonParseMail({ rawEmail: raw }) : undefined;
-    const { raw: _raw, ...rest } = row;
+    // strip `raw` from the response; a row whose parse fails still returns its metadata with an empty body
+    const { raw, ...rest } = row;
+    let parsed: Awaited<ReturnType<typeof commonParseMail>>;
+    let html: string;
+    try {
+        parsed = typeof raw === 'string' && raw ? await commonParseMail({ rawEmail: raw }) : undefined;
+        html = embedCidImages(parsed?.html ?? '', parsed?.attachments);
+    } catch {
+        parsed = undefined;
+        html = '';
+    }
     return {
         ...rest,
         sender: parsed?.sender?.trim() ?? '',
         subject: parsed?.subject ?? '',
         text: parsed?.text ?? '',
-        html: parsed?.html ?? '',
+        html,
         attachments: (parsed?.attachments ?? []).map(a => ({
             filename: a.filename,
             mimeType: a.mimeType,
@@ -43,10 +53,10 @@ const getParsedMail = async (c: Context<HonoCustomType>) => {
     const { mail_id } = c.req.param();
     const row = await c.env.DB.prepare(
         `SELECT * FROM raw_mails where id = ? and address = ?`
-    ).bind(mail_id, address).first();
+    ).bind(mail_id, address).first<RawMailRow>();
     if (!row) return c.json(null);
     const resolved = await resolveRawEmailRow(row);
-    return c.json(await toParsedMailRow(resolved as Record<string, unknown>));
+    return c.json(await toParsedMailRow(resolved));
 };
 
 export default { listParsedMails, getParsedMail };

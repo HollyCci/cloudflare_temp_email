@@ -791,6 +791,7 @@ export const commonParseMail = async (parsedEmailContext: ParsedEmailContext): P
                 mimeType: att.mimeType || "application/octet-stream",
                 content: new Uint8Array(att.content),
                 disposition: att.disposition || "attachment",
+                contentId: att.contentId || "",
             })),
         };
         return parsedEmailContext.parsedEmail;
