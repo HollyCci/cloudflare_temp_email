@@ -15,10 +15,22 @@
 
 ### Bug Fixes
 
+- fix: |邮件| 将 `cid:` 内嵌图转为 data URL，并保留邮件 HTML 中的 data 图片；远程图使用 no-referrer，避免 Logo 裂图
+
 ### Improvements
 
 - feat: |Frontend| 异步按钮在按下时立即进入 pending，请求结束后短暂确认，避免空白等待和连点
 - fix: |Frontend| 修复收件箱因翻译函数引用变化反复拉取邮件、loading 无法结束的问题
+- feat: |Frontend| 账户/管理换场各一次入场；列表、Tab 与返回不做动画
+- feat: |Frontend| 邮件详情点开即显示，不再做入场动画；HTML 放到绘制后再清洗，避免列表卡住
+- feat: |Frontend| 侧栏「你」使用 HeroUI 模版人像；邮件列表与详情显示发件人首字母，并用淡色中性底
+- feat: |Frontend| 侧栏邮箱与账户/管理一样立刻跳转，凭证在后台更换；点开邮件在按下时即切换
+- feat: |Frontend| 账户页「进入收件箱」先播放 pending 再跳转；账户与管理页的地址按钮放进 ListView 动作槽
+- fix: |Frontend| 换箱序号放到全局 store，失败时恢复当前列表；登录后清掉匿名 JWT 并打开绑定邮箱
+- fix: |Frontend| 忽略换箱后才返回的旧列表请求，避免收件箱显示成另一箱
+- fix: |邮件| CID 只嵌入图片属性且限制总量；列表单封解析失败不再拖垮整页；默认拦截远程图，Referer 在插入前去掉
+- refactor: |Frontend| 打开邮箱收口为 store 的 `openMailbox`，同一凭证重开也会刷新列表；收件箱切换状态改为派生；邮件列表按压改用 react-aria `usePress`
+- refactor: |Worker| 解析邮件的容错移入 `toParsedMailRow`，CID 匹配去掉冗余分支
 
 ## v1.12.0
 

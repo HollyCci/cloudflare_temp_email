@@ -19,11 +19,11 @@ const FORBIDDEN = [
     'object', 'embed', 'noscript', 'template', 'portal',
 ];
 
-// DOMPurify's default scheme list has no blob:, but email-parser.js rewrites
-// cid: attachments into blob: URLs -- without this every inline image would be
+// DOMPurify's default scheme list has no blob: or data:. The worker rewrites
+// cid: attachments into data: URLs -- without this every inline image would be
 // stripped along with the trackers.
-const ALLOWED_URI_REGEXP =
-    /^(?:(?:https?|mailto|tel|callto|sms|cid|xmpp|blob|data):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i;
+export const ALLOWED_URI_REGEXP =
+    /^(?:(?:https?|mailto|tel|callto|sms|cid|xmpp|blob):|data:image\/|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i;
 
 // CSS constructs that can load a resource. @import is listed because it also
 // accepts a bare string -- `@import "https://..."` fetches without any url().

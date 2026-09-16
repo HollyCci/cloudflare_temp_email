@@ -6,10 +6,10 @@ import { useNavigate } from 'react-router'
 import { ActionButton } from '../components/ActionButton'
 import { AppShell, PageHeader } from '../components/AppShell'
 import { CreateAddressForm } from '../components/CreateAddressForm'
+import { PageEnter } from '../components/PageEnter'
 import { Turnstile } from '../components/Turnstile'
 import { api } from '../api/client'
 import { useAppState } from '../store/app-store'
-import type { BoundAddress } from '../store/types'
 import { useI18n } from '../i18n'
 import { withLocale } from '../i18n/locale'
 import { copyText, hashPassword } from '../utils/hash'
@@ -19,14 +19,14 @@ export function UserPage() {
   const navigate = useNavigate()
   const {
     userJwt, setUserJwt, setJwt, userOpenSettings, setUserOpenSettings,
-    userSettings, setUserSettings, openSettings,
+    userSettings, setUserSettings, openSettings, addresses, setAddresses, setAddressesFetched,
+    openMailbox, invalidateAddressSwitch,
   } = useAppState()
   const [tab, setTab] = useState('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
   const [cfToken, setCfToken] = useState('')
-  const [addresses, setAddresses] = useState<BoundAddress[]>([])
   const [addressesLoading, setAddressesLoading] = useState(false)
 
   useEffect(() => {
@@ -38,18 +38,21 @@ export function UserPage() {
   const loadAddresses = async () => {
     if (!userJwt) {
       setAddresses([])
+      setAddressesFetched(true)
       setAddressesLoading(false)
       return
     }
     setAddressesLoading(true)
+    setAddressesFetched(false)
     try {
       const settings = await api.getUserSettings()
       if (settings) setUserSettings({ ...settings, fetched: true })
-      const res = await api.fetch('/user_api/bind_address?limit=50&offset=0')
+      const res = await api.listBoundAddresses()
       setAddresses(res.results || [])
     } catch (error: any) {
       toast(error.message, { variant: 'danger' })
     } finally {
+      setAddressesFetched(true)
       setAddressesLoading(false)
     }
   }
@@ -72,7 +75,10 @@ export function UserPage() {
           cf_token: cfToken,
         }),
       })
+      invalidateAddressSwitch()
+      setJwt('')
       setUserJwt(res.jwt)
+      navigate(withLocale('/', locale))
     } catch (error: any) {
       toast(error.message || t('loginFailed'), { variant: 'danger' })
       return false
@@ -123,22 +129,14 @@ export function UserPage() {
     }
   }
 
-  const openAddress = async (addressId: number) => {
-    try {
-      const res = await api.fetch(`/user_api/bind_address_jwt/${addressId}`)
-      setJwt(res.jwt)
-      navigate(withLocale('/', locale))
-    } catch (error: any) {
-      toast(error.message, { variant: 'danger' })
-      return false
-    }
-  }
-
   return (
     <AppShell>
       <div className="flex h-svh flex-col overflow-hidden">
         <PageHeader title={t('account')} />
-        <div className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-8 overflow-auto px-6 pt-4 pb-10">
+        <PageEnter
+          className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-8 overflow-auto px-6 pt-4 pb-10"
+          scene={userJwt ? 'app' : 'auth'}
+        >
         {!userJwt ? (
           <Card className="w-full">
             <Card.Header>
@@ -227,26 +225,36 @@ export function UserPage() {
                           </ListView.Description>
                         </div>
                       </ListView.ItemContent>
-                      <ActionButton size="sm" variant="secondary" onPress={() => openAddress(Number(row.id))}>
-                        {t('openInbox')}
-                      </ActionButton>
-                      <ActionButton
-                        confirm
-                        size="sm"
-                        variant="ghost"
-                        onPress={async () => {
-                          try {
-                            const res = await api.fetch(`/user_api/bind_address_jwt/${row.id}`)
-                            await copyText(res.jwt)
-                            toast(t('copied'))
-                          } catch (error: any) {
-                            toast(error.message, { variant: 'danger' })
-                            return false
-                          }
-                        }}
+                      <ListView.ItemAction
+                        className="flex items-center gap-2"
+                        onPointerDown={(event) => event.stopPropagation()}
                       >
-                        {t('copyJwt')}
-                      </ActionButton>
+                        <ActionButton
+                          size="sm"
+                          variant="secondary"
+                          onPress={() => openMailbox({ id: Number(row.id), name: row.name })}
+                          onAfter={() => navigate(withLocale('/', locale))}
+                        >
+                          {t('openInbox')}
+                        </ActionButton>
+                        <ActionButton
+                          confirm
+                          size="sm"
+                          variant="ghost"
+                          onPress={async () => {
+                            try {
+                              const res = await api.fetch(`/user_api/bind_address_jwt/${row.id}`)
+                              await copyText(res.jwt)
+                              toast(t('copied'))
+                            } catch (error: any) {
+                              toast(error.message, { variant: 'danger' })
+                              return false
+                            }
+                          }}
+                        >
+                          {t('copyJwt')}
+                        </ActionButton>
+                      </ListView.ItemAction>
                     </ListView.Item>
                   )}
                 </ListView>
@@ -254,7 +262,7 @@ export function UserPage() {
             </div>
           </>
         )}
-      </div>
+        </PageEnter>
       </div>
     </AppShell>
   )

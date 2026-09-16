@@ -11,11 +11,13 @@ export function ActionButton({
   children,
   confirm = false,
   onPress,
+  onAfter,
   ...props
 }: Omit<ButtonProps, 'onPress' | 'isPending' | 'children'> & {
   children?: ReactNode
   confirm?: boolean
   onPress: () => ActionResult
+  onAfter?: () => void
 }) {
   const [status, setStatus] = useState<'idle' | 'pending' | 'success'>('idle')
   const timer = useRef<ReturnType<typeof setTimeout> | 0>(0)
@@ -34,12 +36,9 @@ export function ActionButton({
       }
       const wait = MIN_PENDING_MS - (Date.now() - started)
       if (wait > 0) await new Promise((resolve) => window.setTimeout(resolve, wait))
-      if (!confirm) {
-        setStatus('idle')
-        return
-      }
-      setStatus('success')
-      timer.current = window.setTimeout(() => setStatus('idle'), SUCCESS_MS)
+      setStatus(confirm ? 'success' : 'idle')
+      onAfter?.()
+      if (confirm) timer.current = window.setTimeout(() => setStatus('idle'), SUCCESS_MS)
     } catch {
       setStatus('idle')
     }

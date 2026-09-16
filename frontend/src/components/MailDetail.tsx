@@ -1,15 +1,17 @@
+import { useState } from 'react'
 import { ArrowLeft, ArrowRight, ChevronLeft, TrashBin, Tray, Xmark } from '@gravity-ui/icons'
-import { Avatar, Button, ScrollShadow, Tooltip } from '@heroui/react'
+import { Button, ScrollShadow, Tooltip } from '@heroui/react'
 import type { Mail } from '../store/types'
 import { useI18n } from '../i18n'
-import { compactTime, getInitials, parseSender } from '../utils/mail'
+import { compactTime, parseSender } from '../utils/mail'
 import { ActionButton } from './ActionButton'
+import { MailAvatar } from './MailAvatar'
 import { MailHtml } from './MailHtml'
+import { PageEnter } from './PageEnter'
 
 export function MailDetail({
   mail,
   isDark,
-  allowRemote,
   canDelete,
   index,
   total,
@@ -20,7 +22,6 @@ export function MailDetail({
 }: {
   mail: Mail
   isDark: boolean
-  allowRemote: boolean
   canDelete: boolean
   index: number
   total: number
@@ -31,6 +32,7 @@ export function MailDetail({
 }) {
   const { t } = useI18n()
   const sender = parseSender(mail.sender || mail.source)
+  const [allowRemote, setAllowRemote] = useState(false)
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col overflow-clip lg:py-4 lg:pl-0.5 lg:pr-4">
@@ -70,6 +72,11 @@ export function MailDetail({
                 <Tooltip.Content>{t('delete')}</Tooltip.Content>
               </Tooltip>
             ) : null}
+            {allowRemote ? null : (
+              <Button size="sm" variant="ghost" onPress={() => setAllowRemote(true)}>
+                {t('loadImages')}
+              </Button>
+            )}
           </div>
           <div className="flex items-center gap-4 px-2">
             <span className="text-muted text-xs tabular-nums">
@@ -109,9 +116,7 @@ export function MailDetail({
             </h1>
             <div className="flex items-start justify-between">
               <div className="flex gap-3">
-                <Avatar className="size-9 shrink-0">
-                  <Avatar.Fallback>{getInitials(sender.name)}</Avatar.Fallback>
-                </Avatar>
+                <MailAvatar name={sender.name} seed={sender.email || sender.name} />
                 <div className="flex flex-col">
                   <span className="text-foreground text-sm font-medium leading-tight">{sender.name}</span>
                   {sender.email ? (
@@ -122,13 +127,15 @@ export function MailDetail({
               </div>
               <span className="text-muted whitespace-nowrap text-xs">{compactTime(mail.created_at)}</span>
             </div>
-            {mail.html || mail.message ? (
-              <MailHtml allowRemote={allowRemote} html={mail.html || mail.message || ''} isDark={isDark} />
-            ) : (
-              <div className="text-foreground whitespace-pre-wrap text-sm leading-relaxed">
-                {mail.text || ''}
-              </div>
-            )}
+            <div>
+              {mail.html || mail.message ? (
+                <MailHtml allowRemote={allowRemote} html={mail.html || mail.message || ''} isDark={isDark} />
+              ) : (
+                <div className="text-foreground whitespace-pre-wrap text-sm leading-relaxed">
+                  {mail.text || ''}
+                </div>
+              )}
+            </div>
           </div>
         </ScrollShadow>
       </div>
@@ -139,7 +146,7 @@ export function MailDetail({
 export function MailEmpty() {
   const { t } = useI18n()
   return (
-    <div className="flex h-full min-h-0 flex-col items-center justify-center gap-3 px-6 py-16 text-center">
+    <PageEnter className="flex h-full min-h-0 flex-col items-center justify-center gap-3 px-6 py-16 text-center">
       <div className="bg-surface shadow-surface flex size-12 items-center justify-center rounded-2xl">
         <Tray className="text-muted size-5" />
       </div>
@@ -147,6 +154,6 @@ export function MailEmpty() {
         <h2 className="text-foreground text-base font-semibold">{t('nothingOpen')}</h2>
         <p className="text-muted max-w-[320px] text-sm">{t('nothingOpenHint')}</p>
       </div>
-    </div>
+    </PageEnter>
   )
 }

@@ -15,10 +15,22 @@
 
 ### Bug Fixes
 
+- fix: |Mail| Rewrite `cid:` inline images to data URLs and keep data images in mail HTML; send no-referrer on remote images so logos render
+
 ### Improvements
 
 - feat: |Frontend| Show pending immediately on async buttons and a brief confirmation after success, to avoid dead clicks and empty waits
 - fix: |Frontend| Stop the inbox from refetching forever when the translator function identity changes
+- feat: |Frontend| One account/admin scene change; skip lists, tabs, and back
+- feat: |Frontend| Open mail immediately with no entrance motion; sanitize HTML after paint so the list does not stall
+- feat: |Frontend| Use HeroUI template portraits for the sidebar identity; show sender initials on a quiet gray background in the mail list and detail
+- feat: |Frontend| Switch mailboxes as immediately as Account/Admin; fetch the credential in the background. Open mail on press, not after a delay
+- feat: |Frontend| Play pending on Account “Open inbox” before navigating; put address-row buttons in the ListView action slot on Account and Admin
+- fix: |Frontend| Keep mailbox-switch generation in the global store and restore the current list after a failed switch; clear leftover anonymous JWTs on login so a bound mailbox can open
+- fix: |Frontend| Ignore list responses that finish after a mailbox switch so the inbox cannot show the previous box
+- fix: |Mail| Embed CIDs only in image attributes with a total size cap; isolate list-row parse failures; block remote images by default and set no-referrer before insert
+- refactor: |Frontend| Consolidate mailbox opening into the store's `openMailbox` (re-opening with the same credential reloads the list); derive inbox switching state instead of syncing it; use react-aria `usePress` for mail list rows
+- refactor: |Worker| Move parsed-mail fault tolerance into `toParsedMailRow`; drop redundant CID lookup branches
 
 ## v1.12.0
 

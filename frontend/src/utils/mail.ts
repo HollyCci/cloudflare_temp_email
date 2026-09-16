@@ -16,6 +16,35 @@ export function getInitials(name: string) {
   return parts.slice(0, 2).map((part) => part[0]?.toUpperCase() || '').join('') || '?'
 }
 
+const AVATARS = [
+  'https://heroui-assets.nyc3.cdn.digitaloceanspaces.com/avatars/blue.jpg',
+  'https://heroui-assets.nyc3.cdn.digitaloceanspaces.com/avatars/green.jpg',
+  'https://heroui-assets.nyc3.cdn.digitaloceanspaces.com/avatars/purple.jpg',
+  'https://heroui-assets.nyc3.cdn.digitaloceanspaces.com/avatars/orange.jpg',
+  'https://heroui-assets.nyc3.cdn.digitaloceanspaces.com/avatars/red.jpg',
+  'https://heroui-assets.nyc3.cdn.digitaloceanspaces.com/avatars/black.jpg',
+  'https://heroui-assets.nyc3.cdn.digitaloceanspaces.com/avatars/white.jpg',
+  'https://img.heroui.chat/image/avatar?w=400&h=400&u=3',
+  'https://img.heroui.chat/image/avatar?w=400&h=400&u=4',
+  'https://img.heroui.chat/image/avatar?w=400&h=400&u=5',
+  'https://img.heroui.chat/image/avatar?w=400&h=400&u=8',
+  'https://img.heroui.chat/image/avatar?w=400&h=400&u=16',
+] as const
+
+function hashSeed(seed?: string) {
+  const key = (seed || '').trim().toLowerCase() || '?'
+  let hash = 2166136261
+  for (let i = 0; i < key.length; i += 1) {
+    hash ^= key.charCodeAt(i)
+    hash = Math.imul(hash, 16777619)
+  }
+  return hash >>> 0
+}
+
+export function avatarFor(seed?: string) {
+  return AVATARS[hashSeed(seed) % AVATARS.length]
+}
+
 export function mailPreview(mail: { text?: string; html?: string; subject?: string }) {
   const text = (mail.text || '').replace(/\s+/g, ' ').trim()
   if (text) return text

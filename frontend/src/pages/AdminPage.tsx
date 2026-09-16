@@ -5,6 +5,7 @@ import { Envelope } from '@gravity-ui/icons'
 import { ActionButton } from '../components/ActionButton'
 import { AppShell, PageHeader } from '../components/AppShell'
 import { CreateAddressForm } from '../components/CreateAddressForm'
+import { PageEnter } from '../components/PageEnter'
 import { Turnstile } from '../components/Turnstile'
 import { api } from '../api/client'
 import { useAppState } from '../store/app-store'
@@ -63,7 +64,10 @@ export function AdminPage() {
     <AppShell>
       <div className="flex h-svh flex-col overflow-hidden">
         <PageHeader title={t('admin')} />
-        <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 overflow-auto px-6 pt-4 pb-10">
+        <PageEnter
+          className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 overflow-auto px-6 pt-4 pb-10"
+          scene={needPassword ? 'login' : 'app'}
+        >
         {needPassword ? (
           <Card className="w-full">
             <Card.Header>
@@ -125,38 +129,43 @@ export function AdminPage() {
                             </ListView.Description>
                           </div>
                         </ListView.ItemContent>
-                        <ActionButton
-                          confirm
-                          size="sm"
-                          variant="ghost"
-                          onPress={async () => {
-                            try {
-                              const res = await api.fetch(`/admin/show_password/${row.id}`)
-                              await copyText(res.jwt)
-                              toast(t('copied'))
-                            } catch (error: any) {
-                              toast(error.message, { variant: 'danger' })
-                              return false
-                            }
-                          }}
+                        <ListView.ItemAction
+                          className="flex items-center gap-2"
+                          onPointerDown={(event) => event.stopPropagation()}
                         >
-                          {t('copyJwt')}
-                        </ActionButton>
-                        <ActionButton
-                          size="sm"
-                          variant="danger-soft"
-                          onPress={async () => {
-                            try {
-                              await api.fetch(`/admin/delete_address/${row.id}`, { method: 'DELETE' })
-                              setAddresses((items) => items.filter((item) => String(item.id) !== String(row.id)))
-                            } catch (error: any) {
-                              toast(error.message, { variant: 'danger' })
-                              return false
-                            }
-                          }}
-                        >
-                          {t('delete')}
-                        </ActionButton>
+                          <ActionButton
+                            confirm
+                            size="sm"
+                            variant="ghost"
+                            onPress={async () => {
+                              try {
+                                const res = await api.fetch(`/admin/show_password/${row.id}`)
+                                await copyText(res.jwt)
+                                toast(t('copied'))
+                              } catch (error: any) {
+                                toast(error.message, { variant: 'danger' })
+                                return false
+                              }
+                            }}
+                          >
+                            {t('copyJwt')}
+                          </ActionButton>
+                          <ActionButton
+                            size="sm"
+                            variant="danger-soft"
+                            onPress={async () => {
+                              try {
+                                await api.fetch(`/admin/delete_address/${row.id}`, { method: 'DELETE' })
+                                setAddresses((items) => items.filter((item) => String(item.id) !== String(row.id)))
+                              } catch (error: any) {
+                                toast(error.message, { variant: 'danger' })
+                                return false
+                              }
+                            }}
+                          >
+                            {t('delete')}
+                          </ActionButton>
+                        </ListView.ItemAction>
                       </ListView.Item>
                     )}
                   </ListView>
@@ -181,7 +190,7 @@ export function AdminPage() {
             {t('logout')}
           </Button>
         ) : null}
-        </div>
+        </PageEnter>
       </div>
     </AppShell>
   )

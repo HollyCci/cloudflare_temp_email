@@ -1,7 +1,10 @@
-import { Avatar, Description } from '@heroui/react'
+import { useRef } from 'react'
+import { Description } from '@heroui/react'
+import { usePress } from '@react-aria/interactions'
 import type { Mail } from '../store/types'
-import { compactTime, getInitials, mailPreview, parseSender } from '../utils/mail'
+import { compactTime, mailPreview, parseSender } from '../utils/mail'
 import { useI18n } from '../i18n'
+import { MailAvatar } from './MailAvatar'
 
 export function MailListItem({
   mail,
@@ -13,6 +16,8 @@ export function MailListItem({
   onSelect: () => void
 }) {
   const { t } = useI18n()
+  const ref = useRef<HTMLButtonElement>(null)
+  const { pressProps } = usePress({ onPress: () => onSelect(), ref })
   const sender = parseSender(mail.sender || mail.source)
   const unread = mail.is_unread === 1
   const className = `relative flex w-full items-start gap-3 rounded-2xl p-3 text-left transition-colors ${
@@ -22,14 +27,13 @@ export function MailListItem({
   return (
     <li>
       <button
+        {...pressProps}
+        ref={ref}
         aria-current={isActive ? 'page' : undefined}
         className={className}
         type="button"
-        onClick={onSelect}
       >
-        <Avatar className="size-9 shrink-0">
-          <Avatar.Fallback>{getInitials(sender.name)}</Avatar.Fallback>
-        </Avatar>
+        <MailAvatar name={sender.name} seed={sender.email || sender.name} />
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <div className="flex items-center justify-between gap-2">
             <span className={`truncate text-sm leading-tight ${unread ? 'text-foreground font-medium' : 'text-foreground'}`}>

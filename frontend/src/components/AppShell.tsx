@@ -7,21 +7,14 @@ import {
   Sun,
   Tray,
 } from '@gravity-ui/icons'
-import {
-  Avatar,
-  Button,
-  Input,
-  Label,
-  Modal,
-  TextField,
-  Tooltip,
-} from '@heroui/react'
+import { Button, Input, Label, Modal, TextField, Tooltip } from '@heroui/react'
 import { AppLayout, Sidebar } from '@heroui-pro/react'
 import { useLocation, useNavigate } from 'react-router'
 import { useAppState } from '../store/app-store'
+import type { BoundAddress } from '../store/types'
 import { useI18n } from '../i18n'
 import { stripLocalePrefix, withLocale } from '../i18n/locale'
-import { getInitials, parseSender } from '../utils/mail'
+import { MailAvatar } from './MailAvatar'
 
 export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
@@ -32,13 +25,16 @@ export function AppShell({ children }: { children: ReactNode }) {
     toggleTheme,
     addressSettings,
     userSettings,
+    userJwt,
+    addresses,
+    switchingAddress,
+    openMailbox,
     showAuth,
     setShowAuth,
     auth,
   } = useAppState()
   const currentPath = stripLocalePrefix(location.pathname)
-  const identity = addressSettings.address || userSettings.user_email || t('brand')
-  const sender = parseSender(identity)
+  const identity = userSettings.user_email || addressSettings.address || t('brand')
 
   return (
     <>
@@ -47,10 +43,18 @@ export function AppShell({ children }: { children: ReactNode }) {
         sidebarCollapsible="offcanvas"
         sidebar={
           <MailSidebar
+            addresses={addresses}
+            currentAddress={switchingAddress || addressSettings.address}
             currentPath={currentPath}
             identity={identity}
-            initials={getInitials(sender.name)}
+            signedIn={Boolean(userJwt)}
             theme={theme}
+            onOpenMailbox={(id) => {
+              const selected = addresses.find((row) => row.id === id)
+              if (!selected) return
+              if (selected.name === addressSettings.address && currentPath === '/' && !switchingAddress) return
+              void openMailbox(selected)
+            }}
             onToggleTheme={toggleTheme}
           />
         }
@@ -64,22 +68,28 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 function MailSidebar({
   currentPath,
+  currentAddress,
   identity,
-  initials,
+  addresses,
+  signedIn,
   theme,
+  onOpenMailbox,
   onToggleTheme,
 }: {
   currentPath: string
+  currentAddress: string
   identity: string
-  initials: string
+  addresses: BoundAddress[]
+  signedIn: boolean
   theme: 'light' | 'dark'
+  onOpenMailbox: (id: number) => void
   onToggleTheme: () => void
 }) {
   const { t, locale } = useI18n()
   const navigate = useNavigate()
-
+  const inInbox = currentPath === '/' || currentPath === '/telegram_mail'
   const items = [
-    { href: withLocale('/', locale), icon: Tray, id: 'inbox', label: t('inbox'), current: currentPath === '/' || currentPath === '/telegram_mail' },
+    ...(signedIn ? [] : [{ href: withLocale('/', locale), icon: Tray, id: 'inbox', label: t('inbox'), current: inInbox }]),
     { href: withLocale('/user', locale), icon: Person, id: 'account', label: t('account'), current: currentPath === '/user' },
     { href: withLocale('/admin', locale), icon: Gear, id: 'admin', label: t('admin'), current: currentPath === '/admin' },
   ]
@@ -88,22 +98,30 @@ function MailSidebar({
     <>
       <Sidebar>
         <SidebarBody
+          addresses={addresses}
+          currentAddress={currentAddress}
           identity={identity}
-          initials={initials}
+          inInbox={inInbox}
           items={items}
+          signedIn={signedIn}
           theme={theme}
           onCreate={() => navigate(withLocale('/user', locale))}
+          onOpenMailbox={onOpenMailbox}
           onToggleTheme={onToggleTheme}
         />
       </Sidebar>
       <Sidebar.Mobile>
         <SidebarBody
           idPrefix="mobile-"
+          addresses={addresses}
+          currentAddress={currentAddress}
           identity={identity}
-          initials={initials}
+          inInbox={inInbox}
           items={items}
+          signedIn={signedIn}
           theme={theme}
           onCreate={() => navigate(withLocale('/user', locale))}
+          onOpenMailbox={onOpenMailbox}
           onToggleTheme={onToggleTheme}
         />
       </Sidebar.Mobile>
@@ -114,18 +132,26 @@ function MailSidebar({
 function SidebarBody({
   idPrefix = '',
   identity,
-  initials,
   items,
+  addresses,
+  currentAddress,
+  inInbox,
+  signedIn,
   theme,
   onCreate,
+  onOpenMailbox,
   onToggleTheme,
 }: {
   idPrefix?: string
   identity: string
-  initials: string
   items: { href: string; icon: typeof Tray; id: string; label: string; current: boolean }[]
+  addresses: BoundAddress[]
+  currentAddress: string
+  inInbox: boolean
+  signedIn: boolean
   theme: 'light' | 'dark'
   onCreate: () => void
+  onOpenMailbox: (id: number) => void
   onToggleTheme: () => void
 }) {
   const { t, locale } = useI18n()
@@ -136,9 +162,7 @@ function SidebarBody({
     <>
       <Sidebar.Header>
         <div className="flex items-center gap-3 px-1 py-1">
-          <Avatar className="size-9">
-            <Avatar.Fallback>{initials}</Avatar.Fallback>
-          </Avatar>
+          <MailAvatar className="size-9" name={identity} portrait seed={identity} />
           <div className="flex min-w-0 flex-col" data-sidebar="label">
             <span className="text-foreground text-sm font-medium leading-tight">{t('you')}</span>
             <span className="text-muted truncate text-xs font-medium leading-tight">{identity}</span>
@@ -146,8 +170,31 @@ function SidebarBody({
         </div>
       </Sidebar.Header>
       <Sidebar.Content>
+        {signedIn ? (
+          <Sidebar.Group>
+            <Sidebar.GroupLabel>{t('mailboxes')}</Sidebar.GroupLabel>
+            <Sidebar.Menu aria-label={t('mailboxes')}>
+              {addresses.map((row) => (
+                <Sidebar.MenuItem
+                  key={row.id}
+                  href={withLocale('/', locale)}
+                  id={`${idPrefix}mailbox-${row.id}`}
+                  isCurrent={inInbox && currentAddress === row.name}
+                  textValue={row.name}
+                  onAction={() => onOpenMailbox(row.id)}
+                >
+                  <Sidebar.MenuIcon>
+                    <Envelope className="size-4" />
+                  </Sidebar.MenuIcon>
+                  <Sidebar.MenuLabel>{row.name}</Sidebar.MenuLabel>
+                  {row.mail_count ? <Sidebar.MenuChip>{row.mail_count}</Sidebar.MenuChip> : null}
+                </Sidebar.MenuItem>
+              ))}
+            </Sidebar.Menu>
+          </Sidebar.Group>
+        ) : null}
         <Sidebar.Group>
-          <Sidebar.Menu aria-label={t('inbox')}>
+          <Sidebar.Menu aria-label={t('account')}>
             {items.map((item) => (
               <Sidebar.MenuItem
                 key={item.id}

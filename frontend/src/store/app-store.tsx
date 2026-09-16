@@ -7,8 +7,11 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { toast } from '@heroui/react'
+import { api } from '../api/client'
 import { session, emptyOpenSettings, emptyUserSettings } from './session'
-import type { AddressSettings, OpenSettings, UserOpenSettings, UserSettings } from './types'
+import { createMailboxSwitchController } from './mailbox-switch'
+import type { AddressSettings, BoundAddress, OpenSettings, UserOpenSettings, UserSettings } from './types'
 import { APP_CONFIG } from '../config'
 import {
   DEFAULT_LOCALE,
@@ -67,6 +70,18 @@ type AppState = {
   setUserSettings: (value: Partial<UserSettings>) => void
   addressSettings: AddressSettings
   setAddressSettings: (value: AddressSettings) => void
+  addresses: BoundAddress[]
+  setAddresses: (value: BoundAddress[]) => void
+  addressesFetched: boolean
+  setAddressesFetched: (value: boolean) => void
+  switchingAddress: string
+  addressOpenFailed: boolean
+  /** Bumped whenever a mailbox JWT is applied, so the inbox reloads even if the JWT is unchanged. */
+  inboxEpoch: number
+  /** Fetches the bound address's JWT and applies it. Resolves true if the JWT was applied. */
+  openMailbox: (target: { id: number; name: string }) => Promise<boolean>
+  finishAddressSwitch: (address: string) => void
+  invalidateAddressSwitch: () => void
   showAdminPage: boolean
 }
 
@@ -101,6 +116,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     address: '',
     send_balance: 0,
   })
+  const [addresses, setAddresses] = useState<BoundAddress[]>([])
+  const [addressesFetched, setAddressesFetched] = useState(() => !readRaw('userJwt'))
+  const [switchingAddress, setSwitchingAddressState] = useState('')
+  const [addressOpenFailed, setAddressOpenFailed] = useState(false)
+  const [inboxEpoch, setInboxEpoch] = useState(0)
+  const [mailboxSwitch] = useState(() => createMailboxSwitchController())
 
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next)
@@ -117,6 +138,40 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setJwtState(value)
     writeRaw('jwt', value)
   }, [])
+  const openMailbox = useCallback(async (target: { id: number; name: string }) => {
+    const generation = mailboxSwitch.begin(target.name)
+    setSwitchingAddressState(target.name)
+    setAddressOpenFailed(false)
+    // Only the newest switch may mutate state; a superseded one exits silently.
+    const cancel = () => {
+      if (!mailboxSwitch.clearIfLive(generation)) return false
+      setSwitchingAddressState('')
+      setAddressOpenFailed(true)
+      return true
+    }
+    try {
+      const res = await api.openBoundAddress(target.id)
+      if (!res.jwt || !mailboxSwitch.isLive(generation)) {
+        cancel()
+        return false
+      }
+      setJwt(res.jwt)
+      setInboxEpoch((epoch) => epoch + 1)
+      return true
+    } catch (error: any) {
+      if (cancel()) toast(error.message, { variant: 'danger' })
+      return false
+    }
+  }, [mailboxSwitch, setJwt])
+  const finishAddressSwitch = useCallback((address: string) => {
+    if (mailboxSwitch.address && mailboxSwitch.address !== address) return
+    mailboxSwitch.clear()
+    setSwitchingAddressState('')
+  }, [mailboxSwitch])
+  const invalidateAddressSwitch = useCallback(() => {
+    mailboxSwitch.invalidate()
+    setSwitchingAddressState('')
+  }, [mailboxSwitch])
   const setUserJwt = useCallback((value: string) => {
     setUserJwtState(value)
     writeRaw('userJwt', value)
@@ -168,11 +223,16 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     jwt, setJwt, userJwt, setUserJwt, adminAuth, setAdminAuth, auth, setAuth,
     loading, setLoading, showAuth, setShowAuth, showAdminAuth, setShowAdminAuth,
     openSettings, setOpenSettings, userOpenSettings, setUserOpenSettings,
-    userSettings, setUserSettings, addressSettings, setAddressSettings, showAdminPage,
+    userSettings, setUserSettings, addressSettings, setAddressSettings,
+    addresses, setAddresses, addressesFetched, setAddressesFetched,
+    switchingAddress, addressOpenFailed, inboxEpoch, openMailbox,
+    finishAddressSwitch, invalidateAddressSwitch, showAdminPage,
   }), [
     locale, setLocale, theme, toggleTheme, jwt, setJwt, userJwt, setUserJwt,
     adminAuth, setAdminAuth, auth, setAuth, loading, showAuth, showAdminAuth,
-    openSettings, userOpenSettings, userSettings, setUserSettings, addressSettings, showAdminPage,
+    openSettings, userOpenSettings, userSettings, setUserSettings,
+    addressSettings, addresses, addressesFetched, switchingAddress, addressOpenFailed,
+    inboxEpoch, openMailbox, finishAddressSwitch, invalidateAddressSwitch, showAdminPage,
   ])
 
   return (

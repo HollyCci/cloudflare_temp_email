@@ -25,20 +25,46 @@ function LocaleGate({ children }: { children: React.ReactNode }) {
 }
 
 function Bootstrap() {
-  const { setOpenSettings, setUserSettings, userJwt } = useAppState()
+  const {
+    setOpenSettings, setUserSettings, userJwt, jwt, setAddresses, setAddressesFetched, addresses, openMailbox,
+  } = useAppState()
 
   useEffect(() => {
     void api.getOpenSettings(setOpenSettings)
   }, [setOpenSettings])
 
   useEffect(() => {
-    if (!userJwt) return
+    if (!userJwt) {
+      setAddresses([])
+      setAddressesFetched(true)
+      return
+    }
+    setAddressesFetched(false)
     void api.getUserSettings()
       .then((settings) => {
         if (settings) setUserSettings({ ...settings, fetched: true })
       })
       .catch(() => {})
-  }, [userJwt, setUserSettings])
+    let cancelled = false
+    void api.listBoundAddresses()
+      .then((res) => {
+        if (!cancelled) setAddresses(res.results || [])
+      })
+      .catch(() => {
+        if (!cancelled) setAddresses([])
+      })
+      .finally(() => {
+        if (!cancelled) setAddressesFetched(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [userJwt, setUserSettings, setAddresses, setAddressesFetched])
+
+  useEffect(() => {
+    if (!userJwt || jwt || addresses.length === 0) return
+    void openMailbox(addresses[0])
+  }, [userJwt, jwt, addresses, openMailbox])
 
   useEffect(() => {
     const token = APP_CONFIG.CF_WEB_ANALY_TOKEN

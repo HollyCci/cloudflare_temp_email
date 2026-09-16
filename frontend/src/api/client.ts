@@ -8,7 +8,7 @@ import { sanitizeHtml } from '../utils/sanitize-html'
 import { createUserAccessTokenInterceptor } from './user-access-token-interceptor'
 import { ErrorCode } from './error-codes'
 import { emptyOpenSettings } from '../store/session'
-import type { AddressSettings, MailListResponse, OpenSettings } from '../store/types'
+import type { AddressSettings, BoundAddress, MailListResponse, OpenSettings } from '../store/types'
 
 const API_BASE = APP_CONFIG.API_BASE || ''
 
@@ -157,6 +157,12 @@ export const api = {
   async bindUserAddress() {
     if (!session.userJwt) return
     await apiFetch('/user_api/bind_address', { method: 'POST' })
+  },
+  async listBoundAddresses(): Promise<{ results?: BoundAddress[] }> {
+    return await apiFetch('/user_api/bind_address?limit=50&offset=0', { showLoading: false })
+  },
+  async openBoundAddress(id: number): Promise<{ jwt?: string }> {
+    return await apiFetch(`/user_api/bind_address_jwt/${id}`, { showLoading: false })
   },
   async listMails(limit = 20, offset = 0): Promise<MailListResponse> {
     return await apiFetch(`/api/parsed_mails?limit=${limit}&offset=${offset}`, { showLoading: false })

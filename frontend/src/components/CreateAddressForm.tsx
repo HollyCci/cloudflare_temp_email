@@ -30,7 +30,7 @@ export function CreateAddressForm({
   onCreated?: (created: Created) => void
 }) {
   const { t } = useI18n()
-  const { openSettings, setJwt } = useAppState()
+  const { openSettings, setJwt, invalidateAddressSwitch } = useAppState()
   const [name, setName] = useState('')
   const [domain, setDomain] = useState(openSettings.domains[0]?.value || '')
   const [cfToken, setCfToken] = useState('')
@@ -69,6 +69,7 @@ export function CreateAddressForm({
       }
       setCreated(next)
       if (mode === 'user' && next.jwt) {
+        invalidateAddressSwitch()
         setJwt(next.jwt)
         try {
           await api.bindUserAddress()

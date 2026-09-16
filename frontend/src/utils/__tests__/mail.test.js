@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compactTime, getInitials, mailPreview, parseSender } from '../mail'
+import { compactTime, getInitials, mailPreview, parseSender, avatarFor } from '../mail'
 
 describe('parseSender', () => {
   it('splits display name and email', () => {
@@ -20,6 +20,15 @@ describe('parseSender', () => {
 describe('mail helpers', () => {
   it('builds initials from the first two tokens', () => {
     expect(getInitials('Ada Lovelace')).toBe('AL')
+    expect(getInitials('Cursor')).toBe('C')
+  })
+
+  it('assigns a stable template avatar for a mailbox', () => {
+    const first = avatarFor('9vvgp7k4k7@cursor.wocc.rs')
+    const second = avatarFor('9vvgp7k4k7@cursor.wocc.rs')
+    expect(first).toBe(second)
+    expect(first).toMatch(/^https:\/\/(heroui-assets\.nyc3\.cdn\.digitaloceanspaces\.com|img\.heroui\.chat)\//)
+    expect(avatarFor('other@cursor.wocc.rs')).toMatch(/^https:\/\//)
   })
 
   it('prefers plain text for the list preview', () => {
