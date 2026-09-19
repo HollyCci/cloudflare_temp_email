@@ -23,12 +23,3 @@ export const withLocale = (path: string, locale: Locale) => {
   if (normalized === '/') return `/${locale}`
   return `/${locale}${normalized}`
 }
-
-export const getBrowserLocale = (): Locale => {
-  const languages = navigator.languages?.length ? navigator.languages : [navigator.language]
-  for (const language of languages) {
-    if (language.toLowerCase().startsWith('zh')) return 'zh'
-    if (language.toLowerCase().startsWith('en')) return 'en'
-  }
-  return DEFAULT_LOCALE
-}

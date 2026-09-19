@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import {
   Button,
+  Description,
   Input,
   Label,
   ListBox,
   Modal,
+  Radio,
+  RadioGroup,
   Select,
   TextField,
   toast,
@@ -22,6 +25,14 @@ type Created = {
   password?: string
 }
 
+type SubdomainMode = 'none' | 'random' | 'custom'
+
+const SUBDOMAIN_MODES = [
+  { value: 'none', label: 'subdomainNone' },
+  { value: 'random', label: 'subdomainRandom' },
+  { value: 'custom', label: 'subdomainCustom' },
+] as const
+
 export function CreateAddressForm({
   mode,
   onCreated,
@@ -32,31 +43,37 @@ export function CreateAddressForm({
   const { t } = useI18n()
   const { openSettings, setJwt, invalidateAddressSwitch } = useAppState()
   const [name, setName] = useState('')
-  const [domain, setDomain] = useState(openSettings.domains[0]?.value || '')
+  const [domain, setDomain] = useState('')
+  const [subdomainMode, setSubdomainMode] = useState<SubdomainMode>('none')
+  const [subdomain, setSubdomain] = useState('')
   const [cfToken, setCfToken] = useState('')
   const [created, setCreated] = useState<Created | null>(null)
 
+  const selectedDomain = domain || openSettings.domains[0]?.value || ''
+  // 后端只对 RANDOM_SUBDOMAIN_DOMAINS 里的基础域名放行随机和自定义子域名。
+  const allowSubdomain = openSettings.randomSubdomainDomains.includes(selectedDomain)
+  const activeMode = allowSubdomain ? subdomainMode : 'none'
+  const subdomainPrefix = subdomain.trim().toLowerCase()
+
   const submit = async () => {
-    const selectedDomain = domain || openSettings.domains[0]?.value || ''
     const localPart = name.trim() || randomLocalPart(12)
     if (!selectedDomain) {
       toast(t('fillFields'), { variant: 'danger' })
       return false
     }
+    if (activeMode === 'custom' && !subdomainPrefix) {
+      toast(t('fillSubdomain'), { variant: 'danger' })
+      return false
+    }
     const path = mode === 'admin' ? '/admin/new_address' : '/api/new_address'
-    const body = mode === 'admin'
-      ? {
-          enablePrefix: Boolean(openSettings.prefix),
-          enableRandomSubdomain: false,
-          name: localPart,
-          domain: selectedDomain,
-        }
-      : {
-          name: localPart,
-          domain: selectedDomain,
-          cf_token: cfToken,
-          enableRandomSubdomain: false,
-        }
+    const body = {
+      name: localPart,
+      domain: activeMode === 'custom' ? `${subdomainPrefix}.${selectedDomain}` : selectedDomain,
+      enableRandomSubdomain: activeMode === 'random',
+      ...(mode === 'admin'
+        ? { enablePrefix: Boolean(openSettings.prefix) }
+        : { cf_token: cfToken }),
+    }
     try {
       const res = await api.fetch(path, {
         method: 'POST',
@@ -100,7 +117,7 @@ export function CreateAddressForm({
       <Select
         className="w-full"
         placeholder={t('domain')}
-        selectedKey={domain || openSettings.domains[0]?.value}
+        selectedKey={selectedDomain}
         onSelectionChange={(key) => setDomain(String(key))}
       >
         <Label>{t('domain')}</Label>
@@ -119,6 +136,38 @@ export function CreateAddressForm({
           </ListBox>
         </Select.Popover>
       </Select>
+      {allowSubdomain ? (
+        <RadioGroup
+          orientation="horizontal"
+          value={subdomainMode}
+          onChange={(value) => setSubdomainMode(value as SubdomainMode)}
+        >
+          <Label>{t('subdomain')}</Label>
+          {SUBDOMAIN_MODES.map((item) => (
+            <Radio key={item.value} value={item.value}>
+              <Radio.Content>
+                <Radio.Control>
+                  <Radio.Indicator />
+                </Radio.Control>
+                {t(item.label)}
+              </Radio.Content>
+            </Radio>
+          ))}
+        </RadioGroup>
+      ) : null}
+      {activeMode === 'custom' ? (
+        <TextField
+          className="w-full"
+          name="subdomain"
+          value={subdomain}
+          onChange={setSubdomain}
+          variant="secondary"
+        >
+          <Label>{t('subdomainCustom')}</Label>
+          <Input placeholder="team" />
+          <Description>{`${subdomainPrefix || 'team'}.${selectedDomain}`}</Description>
+        </TextField>
+      ) : null}
       {mode === 'user' ? <Turnstile value={cfToken} onChange={setCfToken} /> : null}
       <div className="flex flex-wrap gap-2">
         <Button

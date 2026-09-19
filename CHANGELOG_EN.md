@@ -11,7 +11,9 @@
 ### Features
 
 - feat: |Frontend| Replace Vue 3 + Naive UI with React 19 + HeroUI Pro for inbox, account, and admin core flows
+- feat: |Frontend| Remove the sidebar Chinese/English language toggle and keep the UI in Chinese
 - feat: |Frontend| Align the inbox with the HeroUI Pro Email template: folder sidebar, message list, and detail pane
+- feat: |Frontend| Restore the three subdomain modes (none/random/custom) when creating an address, shared by the web UI and admin panel; shown only for base domains listed in `RANDOM_SUBDOMAIN_DOMAINS`
 
 ### Bug Fixes
 
@@ -19,6 +21,7 @@
 
 ### Improvements
 
+- fix: |Frontend| Take the site name from the Worker `TITLE` and drop hardcoded domains from UI copy, so multi-domain deployments need no code change
 - feat: |Frontend| Show pending immediately on async buttons and a brief confirmation after success, to avoid dead clicks and empty waits
 - fix: |Frontend| Stop the inbox from refetching forever when the translator function identity changes
 - feat: |Frontend| One account/admin scene change; skip lists, tabs, and back

@@ -12,11 +12,8 @@ import { api } from '../api/client'
 import { session, emptyOpenSettings, emptyUserSettings } from './session'
 import { createMailboxSwitchController } from './mailbox-switch'
 import type { AddressSettings, BoundAddress, OpenSettings, UserOpenSettings, UserSettings } from './types'
-import { APP_CONFIG } from '../config'
 import {
   DEFAULT_LOCALE,
-  getBrowserLocale,
-  isSupportedLocale,
   type Locale,
 } from '../i18n/locale'
 
@@ -88,13 +85,7 @@ type AppState = {
 const AppStateContext = createContext<AppState | null>(null)
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(() => {
-    const stored = readRaw('preferredLocale')
-    if (isSupportedLocale(stored)) return stored
-    const configured = APP_CONFIG.DEFAULT_LANG
-    if (isSupportedLocale(configured)) return configured
-    return getBrowserLocale() || DEFAULT_LOCALE
-  })
+  const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE)
   const [theme, setTheme] = useState<'light' | 'dark'>(readTheme)
   const [jwt, setJwtState] = useState(() => readRaw('jwt'))
   const [userJwt, setUserJwtState] = useState(() => readRaw('userJwt'))
@@ -125,7 +116,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next)
-    writeRaw('preferredLocale', next)
   }, [])
   const toggleTheme = useCallback(() => {
     setTheme((current) => {

@@ -11,7 +11,9 @@
 ### Features
 
 - feat: |Frontend| 将 Vue 3 + Naive UI 替换为 React 19 + HeroUI Pro，覆盖收件箱、用户账户与管理端核心流程
+- feat: |Frontend| 去掉侧栏中英文切换按钮，界面固定为中文
 - feat: |Frontend| 收件箱对齐 HeroUI Pro Email 模版：侧栏文件夹、邮件列表与详情分栏
+- feat: |Frontend| 创建邮箱恢复子域名三模式（不使用/随机/自定义），网页端与管理后台共用；仅对 `RANDOM_SUBDOMAIN_DOMAINS` 中的基础域名显示
 
 ### Bug Fixes
 
@@ -19,6 +21,7 @@
 
 ### Improvements
 
+- fix: |Frontend| 站点名改为跟随 Worker 的 `TITLE`，界面文案不再写死具体域名，多域名部署无需改代码
 - feat: |Frontend| 异步按钮在按下时立即进入 pending，请求结束后短暂确认，避免空白等待和连点
 - fix: |Frontend| 修复收件箱因翻译函数引用变化反复拉取邮件、loading 无法结束的问题
 - feat: |Frontend| 账户/管理换场各一次入场；列表、Tab 与返回不做动画

@@ -155,8 +155,6 @@ function SidebarBody({
   onToggleTheme: () => void
 }) {
   const { t, locale } = useI18n()
-  const navigate = useNavigate()
-  const location = useLocation()
 
   return (
     <>
@@ -218,24 +216,14 @@ function SidebarBody({
             <Envelope className="size-4" />
             {t('createAddress')}
           </Button>
-          <div className="flex gap-1">
-            <Button
-              className="flex-1"
-              size="sm"
-              variant="ghost"
-              onPress={() => navigate(withLocale(stripLocalePrefix(location.pathname), locale === 'zh' ? 'en' : 'zh'))}
-            >
-              {locale === 'zh' ? 'EN' : '中文'}
-            </Button>
-            <Tooltip>
-              <Tooltip.Trigger>
-                <Button isIconOnly aria-label={theme === 'dark' ? t('light') : t('dark')} size="sm" variant="ghost" onPress={onToggleTheme}>
-                  {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
-                </Button>
-              </Tooltip.Trigger>
-              <Tooltip.Content>{theme === 'dark' ? t('light') : t('dark')}</Tooltip.Content>
-            </Tooltip>
-          </div>
+          <Tooltip>
+            <Tooltip.Trigger>
+              <Button isIconOnly aria-label={theme === 'dark' ? t('light') : t('dark')} size="sm" variant="ghost" onPress={onToggleTheme}>
+                {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
+              </Button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>{theme === 'dark' ? t('light') : t('dark')}</Tooltip.Content>
+          </Tooltip>
         </div>
       </Sidebar.Footer>
     </>
