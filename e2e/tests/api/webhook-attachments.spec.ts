@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import http from 'node:http';
 import { createHmac, randomUUID } from 'node:crypto';
-import { createTestAddress } from '../../fixtures/test-helpers';
+import { adminHeadersFor, createTestAddress } from '../../fixtures/test-helpers';
 
 const variants = [
   { name: 'on', url: process.env.WORKER_URL!, removeAll: false, removeLarge: true },
@@ -28,6 +28,8 @@ for (const variant of variants) {
       const { jwt, address, address_id } = await createTestAddress(request, 'attachments', undefined, variant.url);
       const jwtSecret = variant.removeAll ? 'e2e-test-secret-key-env-off' : 'e2e-test-secret-key';
       const headers = { Authorization: `Bearer ${jwt}` };
+      // Admin endpoints of this variant need its own admin token (secrets differ per worker).
+      const adminHeaders = adminHeadersFor(variant.url);
       const payloads: any[] = [];
       const server = http.createServer((req, res) => {
         const chunks: Buffer[] = [];
@@ -97,7 +99,7 @@ for (const variant of variants) {
           for (const endpoint of ['/api/webhook/test', '/admin/mail_webhook/test']) {
             const count = payloads.length;
             const result = await request.post(`${variant.url}${endpoint}`, {
-              headers,
+              headers: { ...headers, ...adminHeaders },
               data: {
                 ...settings, mail_id: mailId,
                 body: JSON.stringify({ msgtype: 'markdown', markdown: {
@@ -131,7 +133,7 @@ for (const variant of variants) {
 
         for (const endpoint of ['/api/webhook/test', '/admin/mail_webhook/test']) {
           const count = payloads.length;
-          expect((await request.post(`${variant.url}${endpoint}`, { headers, data: settings })).ok()).toBe(true);
+          expect((await request.post(`${variant.url}${endpoint}`, { headers: { ...headers, ...adminHeaders }, data: settings })).ok()).toBe(true);
           await expect.poll(() => payloads.length).toBe(count + 1);
           const preview = payloads[count];
           expect(preview.ai).toBeNull();
@@ -205,7 +207,7 @@ for (const variant of variants) {
         await testMarkdownMessage(Number(empty.id), []);
         const emptyRow = await (await request.get(`${variant.url}/api/mail/${empty.id}`, { headers })).json();
         expect((await get(sign(0, now + 600, Number(empty.id), address, emptyRow.created_at))).status()).toBe(404);
-        const deleted = await request.delete(`${variant.url}/admin/mails/${payload.id}`);
+        const deleted = await request.delete(`${variant.url}/admin/mails/${payload.id}`, { headers: adminHeaders });
         expect(deleted.ok()).toBe(true);
         expect((await get(sign(0))).status()).toBe(404);
 
@@ -239,7 +241,7 @@ for (const variant of variants) {
           }
         }
       } finally {
-        await request.delete(`${variant.url}/admin/delete_address/${address_id}`);
+        await request.delete(`${variant.url}/admin/delete_address/${address_id}`, { headers: adminHeaders });
         await new Promise<void>(resolve => server.close(() => resolve()));
       }
     });

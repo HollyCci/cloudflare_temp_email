@@ -1,7 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { WORKER_URL } from '../../fixtures/test-helpers';
+import { ADMIN_HEADERS, WORKER_URL } from '../../fixtures/test-helpers';
 
-const ADMIN_HEADERS = { 'x-admin-auth': 'e2e-admin-pass' };
 
 test.describe('Admin Config and D1 Storage', () => {
   test('reports database size in the database status response', async ({ request }) => {

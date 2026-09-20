@@ -23,6 +23,9 @@ res = requests.get(
 
 支持 `address` 过滤
 
+> [!NOTE]
+> `/admin/*` 接口使用 `x-user-access-token` 请求头鉴权，令牌需携带管理员角色。获取方式见 [管理后台 → 在脚本中调用 Admin API](/zh/guide/feature/admin#在脚本中调用-admin-api)。
+
 ```python
 import requests
 
@@ -36,7 +39,7 @@ querystring = {
 }
 
 headers = {
-        "x-admin-auth": "<你的Admin密码>",
+        "x-user-access-token": "<管理员访问令牌>",
         # "x-custom-auth": "<你的网站密码>", # 如果启用了私有站点密码
     }
 
@@ -57,7 +60,7 @@ print(response.json())
 
 ## admin 获取单封邮件 API
 
-无需邮箱 JWT，通过邮件 ID 获取单封邮件，并使用 `x-admin-auth` 认证。
+无需邮箱 JWT，通过邮件 ID 获取单封邮件，并使用 `x-user-access-token`（管理员访问令牌）认证。
 返回结构与 `/admin/mails` 中的单条记录一致：gzip 压缩的原始邮件会解压到 `raw`，响应不包含 `raw_blob`。
 
 ```python
@@ -67,7 +70,7 @@ mail_id = 1
 url = f"https://<你的worker地址>/admin/mails/{mail_id}"
 
 headers = {
-        "x-admin-auth": "<你的Admin密码>",
+        "x-user-access-token": "<管理员访问令牌>",
         # "x-custom-auth": "<你的网站密码>", # 如果启用了私有站点密码
     }
 
@@ -87,7 +90,7 @@ mail_id = 1
 url = f"https://<你的worker地址>/admin/mails/{mail_id}"
 
 headers = {
-        "x-admin-auth": "<你的Admin密码>",
+        "x-user-access-token": "<管理员访问令牌>",
         # "x-custom-auth": "<你的网站密码>", # 如果启用了私有站点密码
     }
 
@@ -107,7 +110,7 @@ address_id = 1
 url = f"https://<你的worker地址>/admin/delete_address/{address_id}"
 
 headers = {
-        "x-admin-auth": "<你的Admin密码>",
+        "x-user-access-token": "<管理员访问令牌>",
         # "x-custom-auth": "<你的网站密码>", # 如果启用了私有站点密码
     }
 
@@ -127,7 +130,7 @@ address_id = 1
 url = f"https://<你的worker地址>/admin/clear_inbox/{address_id}"
 
 headers = {
-        "x-admin-auth": "<你的Admin密码>",
+        "x-user-access-token": "<管理员访问令牌>",
         # "x-custom-auth": "<你的网站密码>", # 如果启用了私有站点密码
     }
 
@@ -147,7 +150,7 @@ address_id = 1
 url = f"https://<你的worker地址>/admin/clear_sent_items/{address_id}"
 
 headers = {
-        "x-admin-auth": "<你的Admin密码>",
+        "x-user-access-token": "<管理员访问令牌>",
         # "x-custom-auth": "<你的网站密码>", # 如果启用了私有站点密码
     }
 

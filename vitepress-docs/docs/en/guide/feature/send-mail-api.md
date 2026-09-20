@@ -12,7 +12,7 @@ There are three HTTP API endpoints for sending emails:
 
 ::: tip What is "Address JWT"?
 The Address JWT is the `jwt` field returned when creating an email address via `/api/new_address` or `/admin/new_address`.
-You can view it in the "Password" menu in the frontend UI. It is **NOT** the `JWT_SECRET` environment variable, nor the admin password.
+You can view it in the "Password" menu in the frontend UI. It is **NOT** the `JWT_SECRET` environment variable, nor a user JWT or admin access token.
 :::
 
 ### Method 1: Header Authentication (`/api/send_mail`)

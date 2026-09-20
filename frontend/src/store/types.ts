@@ -29,7 +29,6 @@ export type OpenSettings = {
   enableSendMail: boolean
   showGithub: boolean
   showGithubForUser: boolean
-  disableAdminPasswordCheck: boolean
   enableAddressPassword: boolean
   enableAgentEmailInfo: boolean
   enableRedeemCode: boolean

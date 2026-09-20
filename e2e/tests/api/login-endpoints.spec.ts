@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { WORKER_URL, createTestAddress, deleteAddress, hashPassword } from '../../fixtures/test-helpers';
+import { ADMIN_HEADERS, WORKER_URL, createTestAddress, deleteAddress, hashPassword, signAccessToken } from '../../fixtures/test-helpers';
 
 test.describe('Turnstile Login Endpoints (ENABLE_GLOBAL_TURNSTILE_CHECK disabled)', () => {
 
@@ -23,36 +23,36 @@ test.describe('Turnstile Login Endpoints (ENABLE_GLOBAL_TURNSTILE_CHECK disabled
     });
   });
 
-  test.describe('/open_api/admin_login', () => {
-    test('correct hashed password succeeds', async ({ request }) => {
+  test.describe('role-based admin access', () => {
+    test('admin password login endpoint no longer exists', async ({ request }) => {
       const res = await request.post(`${WORKER_URL}/open_api/admin_login`, {
-        data: {
-          password: hashPassword('e2e-admin-pass'),
-          cf_token: ''
-        }
+        data: { password: hashPassword('any-pass'), cf_token: '' },
       });
+      expect(res.status()).toBe(404);
+    });
+
+    test('admin role token succeeds', async ({ request }) => {
+      const res = await request.get(`${WORKER_URL}/admin/db_version`, { headers: ADMIN_HEADERS });
       expect(res.ok()).toBe(true);
-      const body = await res.json();
-      expect(body.success).toBe(true);
     });
 
-    test('wrong password returns 401', async ({ request }) => {
-      const res = await request.post(`${WORKER_URL}/open_api/admin_login`, {
-        data: {
-          password: hashPassword('wrong-admin'),
-          cf_token: ''
-        }
-      });
-      expect(res.status()).toBe(401);
-      expect(await res.json()).toMatchObject({ code: 'AUTH_ADMIN_CREDENTIAL_INVALID', message: expect.any(String) });
+    test('missing role token returns 401', async ({ playwright }) => {
+      // newContext() inherits the project-level admin header; clear it for an anonymous call.
+      const anonymous = await playwright.request.newContext({ extraHTTPHeaders: {} });
+      try {
+        const res = await anonymous.get(`${WORKER_URL}/admin/db_version`);
+        expect(res.status()).toBe(401);
+        expect(await res.json()).toMatchObject({ code: 'AUTH_ADMIN_CREDENTIAL_INVALID', message: expect.any(String) });
+      } finally {
+        await anonymous.dispose();
+      }
     });
 
-    test('empty password returns 401', async ({ request }) => {
-      const res = await request.post(`${WORKER_URL}/open_api/admin_login`, {
-        data: {
-          password: '',
-          cf_token: ''
-        }
+    test('non-admin role token returns 401', async ({ request }) => {
+      const res = await request.get(`${WORKER_URL}/admin/db_version`, {
+        headers: {
+          'x-user-access-token': signAccessToken({ user_role: 'case-role', exp: Math.floor(Date.now() / 1000) + 3600 }),
+        },
       });
       expect(res.status()).toBe(401);
       expect(await res.json()).toMatchObject({ code: 'AUTH_ADMIN_CREDENTIAL_INVALID', message: expect.any(String) });

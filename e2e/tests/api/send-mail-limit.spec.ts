@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import type { APIRequestContext } from '@playwright/test';
 import {
+  ADMIN_HEADERS,
   WORKER_URL,
   WORKER_URL_SEND_MAIL_DOMAIN,
   createTestAddress,
@@ -10,8 +11,6 @@ import {
   onMailpitMessage,
 } from '../../fixtures/test-helpers';
 
-const ADMIN_PASSWORD = 'e2e-admin-pass';
-const ADMIN_HEADERS = { 'x-admin-auth': ADMIN_PASSWORD };
 
 const DEFAULT_ACCOUNT_SETTINGS = {
   blockList: [],

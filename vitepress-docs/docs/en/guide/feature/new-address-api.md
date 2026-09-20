@@ -16,7 +16,10 @@ This page describes **Address JWT**, which is different from **User JWT**:
 
 ## Create Email Address via Admin API
 
-This is a `python` example using the `requests` library to send emails.
+This is a `python` example using the `requests` library to create an email address.
+
+> [!NOTE]
+> `/admin/*` endpoints are authenticated with the `x-user-access-token` header, which must carry the admin role. See [Admin Console → Calling Admin APIs from Scripts](/en/guide/feature/admin#calling-admin-apis-from-scripts) for how to obtain one.
 
 ```python
 res = requests.post(
@@ -29,7 +32,7 @@ res = requests.post(
         "domain": "<email_domain>",
     },
     headers={
-        'x-admin-auth': "<your_website_admin_password>",
+        'x-user-access-token': "<admin_access_token>",
         # "x-custom-auth": "<your_website_password>", # If private site password is enabled
         "Content-Type": "application/json"
     }
@@ -54,7 +57,7 @@ res = requests.post(
         "domain": "team.example.com",
     },
     headers={
-        'x-admin-auth': "<your_website_admin_password>",
+        'x-user-access-token': "<admin_access_token>",
         "Content-Type": "application/json"
     }
 )
@@ -99,7 +102,7 @@ def fetch_email_data(name):
                 "domain": "<email_domain>",
             },
             headers={
-                'x-admin-auth': "<your_website_admin_password>",
+                'x-user-access-token': "<admin_access_token>",
                 # "x-custom-auth": "<your_website_password>", # If private site password is enabled
                 "Content-Type": "application/json"
             }

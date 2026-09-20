@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { test, expect } from '@playwright/test';
-import { WORKER_URL, WORKER_URL_ENV_OFF, createTestAddress, seedTestMail, deleteAddress } from '../../fixtures/test-helpers';
+import { ADMIN_HEADERS_ENV_OFF, WORKER_URL, WORKER_URL_ENV_OFF, createTestAddress, seedTestMail, deleteAddress } from '../../fixtures/test-helpers';
 
 test.describe('Mail Deletion', () => {
   test('user mail deletion is disabled when ENABLE_USER_DELETE_EMAIL is false', async ({ request }) => {
@@ -11,6 +11,7 @@ test.describe('Mail Deletion', () => {
     const testUserPasswordHash = createHash('sha256').update(testUserPassword).digest('hex');
 
     const enableRes = await request.post(`${WORKER_URL_ENV_OFF}/admin/user_settings`, {
+      headers: ADMIN_HEADERS_ENV_OFF,
       data: {
         enable: true,
         enableMailVerify: false,
@@ -98,7 +99,7 @@ test.describe('Mail Deletion', () => {
       expect(after.results).toHaveLength(1);
       expect(after.results[0].id).toBe(targetId);
     } finally {
-      const deleteRes = await request.delete(`${WORKER_URL_ENV_OFF}/admin/delete_address/${address_id}`);
+      const deleteRes = await request.delete(`${WORKER_URL_ENV_OFF}/admin/delete_address/${address_id}`, { headers: ADMIN_HEADERS_ENV_OFF });
       expect(deleteRes.ok()).toBe(true);
     }
   });

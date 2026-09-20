@@ -9,7 +9,4 @@ export const ErrorCode = {
 
     isUserAccessTokenError: (response) => response.status === 401
         && response.data?.code === ErrorCode.AUTH_USER_ACCESS_TOKEN_EXPIRED,
-
-    isAdminAuthError: (response) => response.status === 401
-        && response.data?.code === ErrorCode.AUTH_ADMIN_CREDENTIAL_INVALID,
 };

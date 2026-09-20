@@ -1,6 +1,13 @@
 import type { APIRequestContext } from '@playwright/test';
 import { createHash } from 'crypto';
 import WebSocket from 'ws';
+import {
+  E2E_JWT_SECRET_ENV_OFF,
+  E2E_JWT_SECRET_SITE_PASSWORD,
+  adminHeaders,
+} from './access-token.ts';
+
+export * from './access-token.ts';
 
 export const WORKER_URL = process.env.WORKER_URL!;
 export const WORKER_URL_SUBDOMAIN = process.env.WORKER_URL_SUBDOMAIN || '';
@@ -13,11 +20,74 @@ export const FRONTEND_URL_ENV_OFF = process.env.FRONTEND_URL_ENV_OFF || '';
 export const MAILPIT_API = process.env.MAILPIT_API!;
 export const TEST_DOMAIN = 'test.example.com';
 
+/** Site password of the `worker-site-password` variant (`PASSWORDS` in its wrangler.toml). */
+export const SITE_HEADERS = { 'x-custom-auth': 'e2e-site-pass' };
+
+/** Admin role token headers for the default worker (also gzip / subdomain / send-mail-domain variants). */
+export const ADMIN_HEADERS = adminHeaders();
+/** Admin role token headers for the `worker-env-off` variant. */
+export const ADMIN_HEADERS_ENV_OFF = adminHeaders(E2E_JWT_SECRET_ENV_OFF);
+/** Site password + admin role token headers for the `worker-site-password` variant. */
+export const SITE_ADMIN_HEADERS = { ...SITE_HEADERS, ...adminHeaders(E2E_JWT_SECRET_SITE_PASSWORD) };
+
+/**
+ * Admin headers for whichever worker variant `workerUrl` points at.
+ * The project-level admin header is signed for the default worker only.
+ */
+export function adminHeadersFor(workerUrl: string = WORKER_URL): Record<string, string> {
+  if (WORKER_URL_ENV_OFF && workerUrl.startsWith(WORKER_URL_ENV_OFF)) return ADMIN_HEADERS_ENV_OFF;
+  if (WORKER_URL_SITE_PASSWORD && workerUrl.startsWith(WORKER_URL_SITE_PASSWORD)) return SITE_ADMIN_HEADERS;
+  return ADMIN_HEADERS;
+}
+
+/**
+ * Account listed in `ADMIN_USER_EMAILS` of `fixtures/wrangler.toml.e2e`.
+ * It may register even when registration is disabled and is granted the admin role on login.
+ */
+export const BOOTSTRAP_ADMIN_EMAIL = 'admin@test.example.com';
+export const BOOTSTRAP_ADMIN_PASSWORD = 'e2e-bootstrap-admin-pwd';
+
 /**
  * SHA-256 hash matching the frontend hashPassword utility.
  */
 export function hashPassword(password: string): string {
   return createHash('sha256').update(password).digest('hex');
+}
+
+/**
+ * Register (idempotent) and log in a user account. Returns the user JWT
+ * expected in `localStorage.userJwt` (raw string, not JSON encoded).
+ * `password` must already be hashed with `hashPassword` if the UI will log in with it.
+ */
+export async function registerAndLoginUser(
+  ctx: APIRequestContext,
+  email: string,
+  password: string,
+  workerUrl: string = WORKER_URL,
+): Promise<string> {
+  const registerRes = await ctx.post(`${workerUrl}/user_api/register`, { data: { email, password } });
+  if (!registerRes.ok() && registerRes.status() !== 400) {
+    throw new Error(`Failed to register user: ${registerRes.status()} ${await registerRes.text()}`);
+  }
+  const loginRes = await ctx.post(`${workerUrl}/user_api/login`, { data: { email, password } });
+  if (!loginRes.ok()) {
+    throw new Error(`Failed to login user: ${loginRes.status()} ${await loginRes.text()}`);
+  }
+  const { jwt } = await loginRes.json();
+  if (!jwt) throw new Error('Login response did not include a jwt');
+  return jwt;
+}
+
+/**
+ * Log in as the `ADMIN_USER_EMAILS` bootstrap account and return its user JWT.
+ * Seeding it into `localStorage.userJwt` makes the frontend act as an admin:
+ * `/user_api/settings` upserts the admin role and returns an admin access token.
+ */
+export async function loginAsBootstrapAdmin(
+  ctx: APIRequestContext,
+  workerUrl: string = WORKER_URL,
+): Promise<string> {
+  return registerAndLoginUser(ctx, BOOTSTRAP_ADMIN_EMAIL, hashPassword(BOOTSTRAP_ADMIN_PASSWORD), workerUrl);
 }
 
 /**
@@ -226,6 +296,7 @@ export async function getAddressSender(
 ): Promise<any> {
   const res = await ctx.get(
     `${workerUrl}/admin/address_sender?limit=1&offset=0&address=${encodeURIComponent(address)}`,
+    { headers: adminHeadersFor(workerUrl) },
   );
   if (!res.ok()) {
     throw new Error(`Failed to get address sender: ${res.status()} ${await res.text()}`);
@@ -251,6 +322,7 @@ export async function updateAddressSender(
   workerUrl: string = WORKER_URL
 ): Promise<void> {
   const res = await ctx.post(`${workerUrl}/admin/address_sender`, {
+    headers: adminHeadersFor(workerUrl),
     data: opts,
   });
   if (!res.ok()) {
@@ -266,7 +338,9 @@ export async function deleteAddressSender(
   id: number,
   workerUrl: string = WORKER_URL
 ): Promise<void> {
-  const res = await ctx.delete(`${workerUrl}/admin/address_sender/${id}`);
+  const res = await ctx.delete(`${workerUrl}/admin/address_sender/${id}`, {
+    headers: adminHeadersFor(workerUrl),
+  });
   if (!res.ok()) {
     throw new Error(`Failed to delete address sender: ${res.status()} ${await res.text()}`);
   }

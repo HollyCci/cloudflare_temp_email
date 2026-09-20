@@ -8,6 +8,7 @@ import {
     getIntValue,
     getStringValue,
     getUserRoles,
+    getAdminRole,
     getJsonObjectValue,
     trimLower,
 } from '../utils';
@@ -132,7 +133,7 @@ export const parseRedeemValue = (
 ): RedeemValue | null => {
     const normalizedValue = redeemType === RedeemType.AddressPrefixOnce ? trimLower(value) : value.trim();
     if (redeemType === RedeemType.Role && normalizedValue
-        && normalizedValue !== c.env.ADMIN_USER_ROLE
+        && normalizedValue !== getAdminRole(c)
         && getUserRoles(c).some((item) => item.role === normalizedValue)
     ) {
         return { type: RedeemType.Role, role: normalizedValue };

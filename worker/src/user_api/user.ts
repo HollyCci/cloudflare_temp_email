@@ -2,7 +2,7 @@ import { Context } from 'hono';
 import { Jwt } from 'hono/utils/jwt'
 
 import i18n from '../i18n';
-import utils, { checkCfTurnstile, getJsonSetting, checkUserPassword, getUserRoles, getStringValue, getMailDomain, includesDomain } from "../utils"
+import utils, { checkCfTurnstile, getJsonSetting, checkUserPassword, getUserRoles, getStringValue, getMailDomain, includesDomain, isAdminUserEmail } from "../utils"
 import { CONSTANTS } from "../constants";
 import { GeoData, UserInfo, UserSettings } from "../models";
 import { sendMail } from "../mails_api/send_mail_api";
@@ -72,14 +72,15 @@ export default {
         const value = await getJsonSetting(c, CONSTANTS.USER_SETTINGS_KEY);
         const settings = new UserSettings(value)
         const msgs = i18n.getMessagesbyContext(c);
-        // check enable
-        if (!settings.enable) {
-            return c.text(msgs.UserRegistrationDisabledMsg, 403);
-        }
         // check request
         const { email, password, code, cf_token } = await c.req.json();
         if (!email || !password) {
             return c.text(msgs.InvalidEmailOrPasswordMsg, 400)
+        }
+        // check enable; accounts declared in ADMIN_USER_EMAILS may always register
+        // so the first admin can be created without opening registration.
+        if (!settings.enable && !isAdminUserEmail(c, email)) {
+            return c.text(msgs.UserRegistrationDisabledMsg, 403);
         }
         checkUserPassword(password);
         // check cf turnstile only when mail verify is disabled

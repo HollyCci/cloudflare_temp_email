@@ -1,5 +1,6 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
 import {
+  ADMIN_HEADERS,
   WORKER_URL,
   createTestAddress,
   deleteAddress,
@@ -7,7 +8,6 @@ import {
   hashPassword,
 } from '../../fixtures/test-helpers';
 
-const ADMIN_HEADERS = { 'x-admin-auth': 'e2e-admin-pass' };
 
 type RedeemType = 'role' | 'send_balance' | 'address_prefix_once';
 type AddressRedeemResult = {

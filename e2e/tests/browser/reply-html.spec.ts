@@ -1,5 +1,6 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '../../fixtures/test';
 import {
+  ADMIN_HEADERS,
   FRONTEND_URL,
   createTestAddress,
   seedTestMail,
@@ -11,7 +12,7 @@ import { request as apiRequest } from '@playwright/test';
 
 test.describe('Reply HTML & XSS Sanitization', () => {
   test('reply to HTML email — XSS payloads stripped, HTML preserved', async ({ page }) => {
-    const api = await apiRequest.newContext();
+    const api = await apiRequest.newContext({ extraHTTPHeaders: ADMIN_HEADERS });
     let jwt: string | undefined;
 
     try {

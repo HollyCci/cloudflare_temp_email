@@ -23,6 +23,9 @@ res = requests.get(
 
 Supports `address` filter
 
+> [!NOTE]
+> `/admin/*` endpoints are authenticated with the `x-user-access-token` header, which must carry the admin role. See [Admin Console → Calling Admin APIs from Scripts](/en/guide/feature/admin#calling-admin-apis-from-scripts) for how to obtain one.
+
 ```python
 import requests
 
@@ -36,7 +39,7 @@ querystring = {
 }
 
 headers = {
-        "x-admin-auth": "<your-Admin-password>",
+        "x-user-access-token": "<admin-access-token>",
         # "x-custom-auth": "<your-website-password>", # If private site password is enabled
     }
 
@@ -57,7 +60,7 @@ Enable `ENABLE_MAIL_READ_STATUS` and upgrade the database first. Historical mail
 
 ## Admin Get Mail API
 
-Fetch a single mail by mail ID without a mailbox JWT. Authenticate with `x-admin-auth`.
+Fetch a single mail by mail ID without a mailbox JWT. Authenticate with `x-user-access-token` (admin access token).
 The response matches one entry returned by `/admin/mails`: gzip-compressed raw content is decompressed into `raw`, and `raw_blob` is excluded.
 
 ```python
@@ -67,7 +70,7 @@ mail_id = 1
 url = f"https://<your-worker-address>/admin/mails/{mail_id}"
 
 headers = {
-        "x-admin-auth": "<your-Admin-password>",
+        "x-user-access-token": "<admin-access-token>",
         # "x-custom-auth": "<your-website-password>", # If private site password is enabled
     }
 
@@ -87,7 +90,7 @@ mail_id = 1
 url = f"https://<your-worker-address>/admin/mails/{mail_id}"
 
 headers = {
-        "x-admin-auth": "<your-Admin-password>",
+        "x-user-access-token": "<admin-access-token>",
         # "x-custom-auth": "<your-website-password>", # If private site password is enabled
     }
 
@@ -107,7 +110,7 @@ address_id = 1
 url = f"https://<your-worker-address>/admin/delete_address/{address_id}"
 
 headers = {
-        "x-admin-auth": "<your-Admin-password>",
+        "x-user-access-token": "<admin-access-token>",
         # "x-custom-auth": "<your-website-password>", # If private site password is enabled
     }
 
@@ -127,7 +130,7 @@ address_id = 1
 url = f"https://<your-worker-address>/admin/clear_inbox/{address_id}"
 
 headers = {
-        "x-admin-auth": "<your-Admin-password>",
+        "x-user-access-token": "<admin-access-token>",
         # "x-custom-auth": "<your-website-password>", # If private site password is enabled
     }
 
@@ -147,7 +150,7 @@ address_id = 1
 url = f"https://<your-worker-address>/admin/clear_sent_items/{address_id}"
 
 headers = {
-        "x-admin-auth": "<your-Admin-password>",
+        "x-user-access-token": "<admin-access-token>",
         # "x-custom-auth": "<your-website-password>", # If private site password is enabled
     }
 

@@ -1,7 +1,6 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
-import { deleteAddress, WORKER_URL } from '../../fixtures/test-helpers';
+import { ADMIN_HEADERS, deleteAddress, WORKER_URL } from '../../fixtures/test-helpers';
 
-const ADMIN_HEADERS = { 'x-admin-auth': 'e2e-admin-pass' };
 const MAX_BATCH_SIZE = 500;
 const UUID_V4_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 

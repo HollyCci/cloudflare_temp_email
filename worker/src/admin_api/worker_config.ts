@@ -10,7 +10,6 @@ export default {
             "DEFAULT_LANG": c.env.DEFAULT_LANG,
             "TITLE": c.env.TITLE,
             "HAS_PASSWORD": utils.getPasswords(c).length,
-            "HAS_ADMIN_PASSWORDS": utils.getAdminPasswords(c).length,
             "ANNOUNCEMENT": utils.getStringValue(c.env.ANNOUNCEMENT),
             "ALWAYS_SHOW_ANNOUNCEMENT": utils.getBooleanValue(c.env.ALWAYS_SHOW_ANNOUNCEMENT),
 
@@ -31,7 +30,8 @@ export default {
 
             "HAS_JWT_SECRET": !!utils.getStringValue(c.env.JWT_SECRET),
 
-            "ADMIN_USER_ROLE": utils.getStringValue(c.env.ADMIN_USER_ROLE),
+            "ADMIN_USER_ROLE": utils.getAdminRole(c),
+            "ADMIN_USER_EMAILS": utils.getAdminUserEmails(c),
             "USER_DEFAULT_ROLE": utils.getStringValue(c.env.USER_DEFAULT_ROLE),
             "USER_ROLES": utils.getUserRoles(c),
             "NO_LIMIT_SEND_ROLE": utils.getSplitStringListValue(c.env.NO_LIMIT_SEND_ROLE),
@@ -50,7 +50,6 @@ export default {
             "VERSION": CONSTANTS.VERSION,
             "DISABLE_SHOW_GITHUB": utils.getBooleanValue(c.env.DISABLE_SHOW_GITHUB),
             "DISABLE_SHOW_GITHUB_FOR_USER": utils.getBooleanValue(c.env.DISABLE_SHOW_GITHUB_FOR_USER),
-            "DISABLE_ADMIN_PASSWORD_CHECK": utils.getBooleanValue(c.env.DISABLE_ADMIN_PASSWORD_CHECK),
             "ENABLE_CHECK_JUNK_MAIL": utils.getBooleanValue(c.env.ENABLE_CHECK_JUNK_MAIL),
             "JUNK_MAIL_CHECK_LIST": utils.getStringArray(c.env.JUNK_MAIL_CHECK_LIST),
             "JUNK_MAIL_FORCE_PASS_LIST": utils.getStringArray(c.env.JUNK_MAIL_FORCE_PASS_LIST),

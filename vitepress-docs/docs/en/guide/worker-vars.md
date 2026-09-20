@@ -9,7 +9,7 @@
 | -------------------------- | ----------- | ---------------------------------------------------------------------- | ------------------------------------ |
 | `DOMAINS`                  | JSON        | All domains for temporary email, supports multiple domains             | `["awsl.uk", "dreamhunter2333.xyz"]` |
 | `JWT_SECRET`               | Text/Secret | Secret key for signing JWTs used in login and authentication. Use a random string, e.g. generated via `openssl rand -hex 32` | `a1b2c3d4...`                        |
-| `ADMIN_PASSWORDS`          | JSON        | Admin console passwords, console access disabled if not configured     | `["123", "456"]`                     |
+| `ADMIN_USER_EMAILS`        | JSON        | Bootstrap admin accounts: listed user accounts are granted the admin role on login and can open the Admin Console; they may also register while user registration is disabled | `["admin@example.com"]`              |
 | `ENABLE_USER_CREATE_EMAIL` | Text/JSON   | Whether to allow users to create mailboxes, disabled if not configured | `true`                               |
 | `ENABLE_USER_DELETE_EMAIL` | Text/JSON   | Whether to allow users to delete emails, disabled if not configured    | `true`                               |
 | `ENABLE_MAIL_READ_STATUS` | Text/JSON | Enables read/unread mail state. Upgrade the database schema before enabling | `true` |
@@ -26,9 +26,12 @@
 | ------------------------------ | --------- | ------------------------------------------------------- | ---------------- |
 | `PASSWORDS`                    | JSON      | Website private passwords, required after configuration | `["123", "456"]` |
 | `ADMIN_API_IP_WHITELIST`       | JSON      | Admin API IP whitelist; when configured, only listed IPs may access `/admin/*` | `["203.0.113.10"]` |
-| `DISABLE_ADMIN_PASSWORD_CHECK` | Text/JSON | Warning: Admin console without password or user check   | `false`          |
 
-When `ADMIN_API_IP_WHITELIST` is unset or empty, source IPs are not restricted. Once configured, it applies to both admin-password and Admin user-token access, trusts only Cloudflare's `CF-Connecting-IP` header, and denies requests without that header.
+> [!NOTE] The Admin Console uses role-based access control (RBAC)
+> There is no separate admin password. Only signed-in user accounts whose role equals `ADMIN_USER_ROLE` (default `admin`) can access `/admin/*`.
+> Bootstrap the first admin with `ADMIN_USER_EMAILS`, then grant the admin role to other users in **Admin Console → Users**. See [Admin Console](/en/guide/feature/admin).
+
+When `ADMIN_API_IP_WHITELIST` is unset or empty, source IPs are not restricted. Once configured, it applies to every `/admin/*` request carrying an admin access token, trusts only Cloudflare's `CF-Connecting-IP` header, and denies requests without that header.
 
 ## Email Related Variables
 
@@ -142,7 +145,8 @@ When `ADMIN_API_IP_WHITELIST` is unset or empty, source IPs are not restricted. 
 | Variable Name                         | Type      | Description                                                                                          | Example   |
 | ------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------- | --------- |
 | `USER_DEFAULT_ROLE`                   | Text      | Default role for new users, only effective when email verification is enabled                        | `vip`     |
-| `ADMIN_USER_ROLE`                     | Text      | Admin role configuration, if user role equals ADMIN_USER_ROLE, user can access admin console         | `admin`   |
+| `ADMIN_USER_ROLE`                     | Text      | Admin role name, defaults to `admin`; users with this role can access the Admin Console. The role is added to the available roles automatically, no need to repeat it in `USER_ROLES` | `admin`   |
+| `ADMIN_USER_EMAILS`                   | JSON      | Bootstrap admin account list, see "Required Variables" above                                          | `["admin@example.com"]` |
 | `USER_ROLES`                          | JSON      | -                                                                                                    | See below |
 | `DISABLE_ANONYMOUS_USER_CREATE_EMAIL` | Text/JSON | Disable anonymous user mailbox creation, if set to true, users can only create addresses after login | `true`    |
 | `NO_LIMIT_SEND_ROLE`                  | Text      | Roles that can send unlimited emails, multiple roles separated by comma `vip,admin`                  | `vip`     |
@@ -171,7 +175,7 @@ When `ADMIN_API_IP_WHITELIST` is unset or empty, source IPs are not restricted. 
 | `STATUS_URL`               | Text        | Status monitoring page URL, shows Status menu button when configured     | `https://status.example.com` |
 | `CF_TURNSTILE_SITE_KEY`    | Text/Secret | Turnstile CAPTCHA configuration (for new address creation, registration code, etc.) | `xxx`                 |
 | `CF_TURNSTILE_SECRET_KEY`  | Text/Secret | Turnstile CAPTCHA configuration (for new address creation, registration code, etc.) | `xxx`                 |
-| `ENABLE_GLOBAL_TURNSTILE_CHECK` | Text/JSON | Enable global Turnstile CAPTCHA for all login forms (admin login, user login, address password login), requires Turnstile keys above | `true` |
+| `ENABLE_GLOBAL_TURNSTILE_CHECK` | Text/JSON | Enable global Turnstile CAPTCHA for all login forms (site password login, address credential login, user login, address password login), requires Turnstile keys above | `true` |
 
 ## Telegram Bot Related Variables
 

@@ -91,10 +91,8 @@ PREFIX = "tmp" # The mailbox name prefix to be processed
 # ADDRESS_REGEX = "[^a-z0-9]"
 # If you want your site to be private, uncomment below and change your password
 # PASSWORDS = ["123", "456"]
-# admin console password, if not configured, access to the console is not allowed
-# ADMIN_PASSWORDS = ["123", "456"]
-# warning: no password or user check for admin portal
-# DISABLE_ADMIN_PASSWORD_CHECK = false
+# Admin Console is role-based (RBAC): listed user accounts get the admin role on login
+# ADMIN_USER_EMAILS = ["admin@example.com"]
 # admin contact information. If not configured, it will not be displayed. Any string can be configured.
 # ADMIN_CONTACT = "xx@xx.xxx"
 DEFAULT_DOMAINS = ["xxx.xxx1" , "xxx.xxx2"] # domain name for no role users
@@ -102,7 +100,7 @@ DOMAINS = ["xxx.xxx1" , "xxx.xxx2"] # all your domain name
 # For chinese domain name, you can use DOMAIN_LABELS to show chinese domain name
 # DOMAIN_LABELS = ["中文.xxx", "xxx.xxx2"]
 # USER_DEFAULT_ROLE = "vip" # default role for new users(only when enable mail verification)
-# ADMIN_USER_ROLE = "admin" # the role which can access admin panel
+# ADMIN_USER_ROLE = "admin" # the role which can access admin panel, defaults to "admin"
 # User roles configuration, if domains is empty will use default_domains, if prefix is null will use default prefix, if prefix is empty string will not use prefix
 # USER_ROLES = [
 #    { domains = ["xxx.xxx1" , "xxx.xxx2"], role = "vip", prefix = "vip" },

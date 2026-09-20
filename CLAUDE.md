@@ -55,8 +55,8 @@ Three auth layers applied via Hono middleware, each using different headers:
 |-------------|--------|---------|
 | `/api/*` | `Authorization: Bearer <jwt>` | Address (mailbox) credential |
 | `/user_api/*` | `x-user-token` | User account JWT |
-| `/admin/*` | `x-admin-auth` | Admin password |
-| (any) | `x-user-access-token` | User role-based access token |
+| `/admin/*` | `x-user-access-token` | Admin access token (RBAC): `user_role` must equal `ADMIN_USER_ROLE`, default `admin`. No admin password; bootstrap admins via `ADMIN_USER_EMAILS` |
+| (any) | `x-user-access-token` | User role-based access token (issued as `access_token` by `/user_api/settings`, 1h) |
 | (any) | `x-custom-auth` | Optional global access password |
 | (any) | `x-lang` | Language preference (`en`/`zh`) |
 

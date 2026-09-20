@@ -1,25 +1,40 @@
 # Admin Console
 
 > [!NOTE]
-> You need to configure `ADMIN_PASSWORDS` or `ADMIN_USER_ROLE` to access the admin console
-> Admin role configuration: if the user role equals ADMIN_USER_ROLE, they can access the admin console
+> The Admin Console uses role-based access control (RBAC); there is no separate admin password.
+> Only signed-in user accounts whose role equals `ADMIN_USER_ROLE` (default `admin`) can open it.
 
-After deploying the frontend application, click the upper-left logo 5 times or visit the `/admin` path to enter the Admin Console.
+After deploying the frontend, sign in with an admin account and the **Admin** entry appears in the sidebar; you can also visit `/admin` directly. Guests are asked to sign in first, and signed-in users without the admin role see an access-denied message.
 
-You need to configure `ADMIN_PASSWORDS` in the backend or ensure the current user role is `ADMIN_USER_ROLE`, otherwise access to the console will be denied.
+## Becoming an Admin
 
-## Admin Passwords vs User Accounts
+1. **Bootstrap the first admin**: set the `ADMIN_USER_EMAILS` Worker variable, e.g. `["admin@example.com"]`. Listed accounts are granted the admin role automatically after registering and signing in (they may register even while user registration is disabled).
+2. **Add more admins**: open **Admin Console → Users** and assign the role matching `ADMIN_USER_ROLE` to the target user; clearing the role revokes admin access.
 
-`ADMIN_PASSWORDS` is the password for the Admin Console. It is not a site user account
-and does not correspond to any mailbox. Logging in with an admin password grants access to
-the console, but that login itself cannot receive mail.
+`ADMIN_USER_ROLE` defaults to `admin`. The role is always included in the assignable role list, so you do not need to repeat it in `USER_ROLES`. If you do declare a role with the same name in `USER_ROLES`, its domains and prefix apply to admins as well.
 
-Site user accounts are stored in the `users` table and use the user login flow. Whether a user can
-receive mail depends on whether they created or bound a mailbox. Creating a normal user
-whose account email is `admin@example.com` does not automatically grant admin permissions.
+## Admin Accounts vs Mailboxes
 
-If you want a user account to access the Admin console, configure `ADMIN_USER_ROLE` and assign the
-same role to that user in user management.
+An admin is a site **user account** (the `users` table) holding the admin role, not a mailbox. Whether a user can receive mail depends on whether they created or bound a mailbox. A mailbox named `admin@example.com` does not grant console access by itself; only accounts listed in `ADMIN_USER_EMAILS` or assigned the admin role can enter the console.
+
+## Calling Admin APIs from Scripts
+
+Every `/admin/*` endpoint is authenticated with the `x-user-access-token` header, whose `user_role` claim must equal `ADMIN_USER_ROLE`. To obtain a token:
+
+- **With an admin account**: call `POST /user_api/login` to get a user JWT, then request `GET /user_api/settings` with `x-user-token`. The returned `access_token` is the admin access token (valid for 1 hour; the frontend refreshes it automatically).
+- **For automation**: sign an HS256 JWT with `JWT_SECRET` whose payload looks like `{"user_role": "admin", "exp": <expiry timestamp>}`; `exp` is required.
+
+```python
+import requests
+
+headers = {
+    "x-user-access-token": "<admin access token>",
+    # "x-custom-auth": "<your site password>",  # if the private site password is enabled
+}
+print(requests.get("https://<your-worker-domain>/admin/mails?limit=20&offset=0", headers=headers).json())
+```
+
+When `ADMIN_API_IP_WHITELIST` is configured, the source IP must also be whitelisted.
 
 ![admin](/feature/admin.png)
 
@@ -36,9 +51,9 @@ same role to that user in user management.
 
 When searching for email addresses, pagination automatically resets to page 1.
 
-## If your website is for private access only, you can disable this check
+## User Management
 
-`DISABLE_ADMIN_PASSWORD_CHECK = true`
+**Admin Console → Users** lists and searches every user account, assigns or clears roles (including the admin role), creates new users, and deletes users.
 
 ## IP Blacklist / Whitelist
 

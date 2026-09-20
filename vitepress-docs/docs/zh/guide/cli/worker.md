@@ -65,9 +65,9 @@ DOMAINS = ["xxx.xxx1" , "xxx.xxx2"]
 # 请使用随机字符串，例如通过 openssl rand -hex 32 生成
 JWT_SECRET = "xxx"
 
-# admin 控制台密码, 不配置则不允许访问控制台
-# ADMIN_PASSWORDS = ["123", "456"]
-# Admin API IP 白名单，同时限制管理员密码和 Admin 用户令牌访问
+# 管理后台基于角色（RBAC）：列表中的用户账号登录后自动获得管理员角色
+# ADMIN_USER_EMAILS = ["admin@example.com"]
+# Admin API IP 白名单，限制所有 /admin/* 请求的来源 IP
 # ADMIN_API_IP_WHITELIST = ["203.0.113.10"]
 
 # 是否允许用户创建邮件, 不配置则不允许

@@ -10,8 +10,17 @@
 
 ### Features
 
+- feat: |鉴权| **破坏性变更**：管理后台改为基于角色的访问控制（RBAC）。移除 `ADMIN_PASSWORDS`、`DISABLE_ADMIN_PASSWORD_CHECK`、`x-admin-auth` 请求头与 `/open_api/admin_login` 接口，`/admin/*` 仅接受角色等于 `ADMIN_USER_ROLE`（默认 `admin`）的 `x-user-access-token`；Telegram 小程序管理员查信同样改为校验管理员令牌
+- feat: |Worker| 新增 `ADMIN_USER_EMAILS` 管理员引导：列表中的账号登录后自动获得管理员角色，并允许在关闭用户注册时注册；`ADMIN_USER_ROLE` 默认为 `admin` 且自动加入可用角色列表，无需在 `USER_ROLES` 中重复声明
+- feat: |Frontend| 侧栏「管理」入口仅对管理员账号显示，`/admin` 区分未登录 / 无权访问 / 管理员三种状态，删除管理员密码登录卡片与 `adminAuth` 存储
+- feat: |Admin| 新增「用户」页签：查看与搜索用户、分配或清空角色（含管理员角色）、新建及删除用户
+- refactor: |e2e| 测试改为用 `JWT_SECRET` 签发管理员访问令牌鉴权 `/admin/*`（`fixtures/access-token.ts`、`scripts/admin-token.mjs`），Docker 入口用令牌初始化数据库，去掉密码语义的用例并新增 React 管理端访问控制用例
+- docs: |文档| 更新 Worker 变量、管理后台、Admin API 示例、CLI/UI 部署与常见问题中的管理员鉴权说明（中英）
 - feat: |Frontend| 将 Vue 3 + Naive UI 替换为 React 19 + HeroUI Pro，覆盖收件箱、用户账户与管理端核心流程
 - feat: |Frontend| 去掉侧栏中英文切换按钮，界面固定为中文
+- feat: |Frontend| 主题切换移到侧栏底部「新建邮箱」右侧
+- feat: |Frontend| 侧栏身份卡对齐 HeroUI Pro 模板：首行显示账户邮箱 / 当前地址 / 站点名，次行显示管理员、已登录、临时邮箱、未登录等状态，头像改为首字母而非随机人像
+- fix: |Frontend| 新建邮箱不再把占位符当成用户名，未填写时不会悄悄生成随机地址
 - feat: |Frontend| 收件箱对齐 HeroUI Pro Email 模版：侧栏文件夹、邮件列表与详情分栏
 - feat: |Frontend| 创建邮箱恢复子域名三模式（不使用/随机/自定义），网页端与管理后台共用；仅对 `RANDOM_SUBDOMAIN_DOMAINS` 中的基础域名显示
 

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { TEST_DOMAIN, WORKER_URL, WORKER_URL_ENV_OFF, WORKER_URL_SUBDOMAIN } from '../../fixtures/test-helpers';
+import { ADMIN_HEADERS_ENV_OFF, TEST_DOMAIN, WORKER_URL, WORKER_URL_ENV_OFF, WORKER_URL_SUBDOMAIN, adminHeadersFor } from '../../fixtures/test-helpers';
 
 const MANUAL_BASE_DOMAIN = 'manual.example.com';
 const SUBDOMAIN = `team.${MANUAL_BASE_DOMAIN}`;
@@ -15,7 +15,7 @@ let originalCreateAddressStoredEnabled: boolean | undefined;
 let originalEnvOffStoredEnabled: boolean | undefined;
 
 async function getAccountSettings(request: any, workerUrl: string) {
-  const res = await request.get(`${workerUrl}/admin/account_settings`);
+  const res = await request.get(`${workerUrl}/admin/account_settings`, { headers: adminHeadersFor(workerUrl) });
   expect(res.ok()).toBe(true);
   return await res.json();
 }
@@ -46,6 +46,7 @@ async function saveSubdomainMatchSetting(
 ) {
   const current = await getAccountSettings(request, workerUrl);
   const res = await request.post(`${workerUrl}/admin/account_settings`, {
+    headers: adminHeadersFor(workerUrl),
     data: buildAccountSettingsPayload(current, {
       enableSubdomainMatch,
     }),
@@ -222,6 +223,7 @@ test.describe('Create Address Subdomain Match', () => {
     await saveSubdomainMatchSetting(request, WORKER_URL_ENV_OFF, true);
 
     const res = await request.post(`${WORKER_URL_ENV_OFF}/admin/new_address`, {
+      headers: ADMIN_HEADERS_ENV_OFF,
       data: { name: `subdomain-env-off-${Date.now()}`, domain: RANDOM_SUBDOMAIN },
     });
     expect(res.ok()).toBe(false);

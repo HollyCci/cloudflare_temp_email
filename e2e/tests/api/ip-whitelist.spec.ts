@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { WORKER_URL, createTestAddress } from '../../fixtures/test-helpers';
+import { ADMIN_HEADERS, WORKER_URL, createTestAddress } from '../../fixtures/test-helpers';
 
-const ADMIN_PASSWORD = 'e2e-admin-pass';
 
 const RESET_SETTINGS = {
   enabled: false,
@@ -17,14 +16,14 @@ const RESET_SETTINGS = {
 test.describe('IP Whitelist Settings', () => {
   test.afterEach(async ({ request }) => {
     await request.post(`${WORKER_URL}/admin/ip_blacklist/settings`, {
-      headers: { 'x-admin-auth': ADMIN_PASSWORD },
+      headers: ADMIN_HEADERS,
       data: RESET_SETTINGS,
     });
   });
 
   test('get default IP whitelist settings returns disabled with empty list', async ({ request }) => {
     const res = await request.get(`${WORKER_URL}/admin/ip_blacklist/settings`, {
-      headers: { 'x-admin-auth': ADMIN_PASSWORD },
+      headers: ADMIN_HEADERS,
     });
     expect(res.ok()).toBe(true);
     const settings = await res.json();
@@ -35,7 +34,7 @@ test.describe('IP Whitelist Settings', () => {
   test('save and retrieve IP whitelist settings', async ({ request }) => {
     // Save whitelist settings
     const saveRes = await request.post(`${WORKER_URL}/admin/ip_blacklist/settings`, {
-      headers: { 'x-admin-auth': ADMIN_PASSWORD },
+      headers: ADMIN_HEADERS,
       data: {
         enabled: false,
         blacklist: [],
@@ -53,7 +52,7 @@ test.describe('IP Whitelist Settings', () => {
 
     // Retrieve and verify
     const getRes = await request.get(`${WORKER_URL}/admin/ip_blacklist/settings`, {
-      headers: { 'x-admin-auth': ADMIN_PASSWORD },
+      headers: ADMIN_HEADERS,
     });
     expect(getRes.ok()).toBe(true);
     const settings = await getRes.json();
@@ -65,7 +64,7 @@ test.describe('IP Whitelist Settings', () => {
     // Note: Frontend blocks this, but backend allows it (empty list = ignored)
     // This test verifies backend behavior
     const saveRes = await request.post(`${WORKER_URL}/admin/ip_blacklist/settings`, {
-      headers: { 'x-admin-auth': ADMIN_PASSWORD },
+      headers: ADMIN_HEADERS,
       data: {
         enabled: false,
         blacklist: [],
@@ -83,7 +82,7 @@ test.describe('IP Whitelist Settings', () => {
 
   test('whitelist validates array type', async ({ request }) => {
     const saveRes = await request.post(`${WORKER_URL}/admin/ip_blacklist/settings`, {
-      headers: { 'x-admin-auth': ADMIN_PASSWORD },
+      headers: ADMIN_HEADERS,
       data: {
         enabled: false,
         blacklist: [],
@@ -102,7 +101,7 @@ test.describe('IP Whitelist Settings', () => {
   test('whitelist enforces max size limit', async ({ request }) => {
     const largeList = Array.from({ length: 1001 }, (_, i) => `1.2.3.${i % 256}`);
     const saveRes = await request.post(`${WORKER_URL}/admin/ip_blacklist/settings`, {
-      headers: { 'x-admin-auth': ADMIN_PASSWORD },
+      headers: ADMIN_HEADERS,
       data: {
         enabled: false,
         blacklist: [],
@@ -124,7 +123,7 @@ test.describe('IP Whitelist Settings', () => {
   test('backward compatibility: old frontend without whitelist fields', async ({ request }) => {
     // Simulate old frontend that doesn't send enableWhitelist/whitelist
     const saveRes = await request.post(`${WORKER_URL}/admin/ip_blacklist/settings`, {
-      headers: { 'x-admin-auth': ADMIN_PASSWORD },
+      headers: ADMIN_HEADERS,
       data: {
         enabled: true,
         blacklist: ['10.0.0.1'],
@@ -140,7 +139,7 @@ test.describe('IP Whitelist Settings', () => {
 
     // Verify defaults were applied
     const getRes = await request.get(`${WORKER_URL}/admin/ip_blacklist/settings`, {
-      headers: { 'x-admin-auth': ADMIN_PASSWORD },
+      headers: ADMIN_HEADERS,
     });
     expect(getRes.ok()).toBe(true);
     const settings = await getRes.json();
@@ -150,7 +149,7 @@ test.describe('IP Whitelist Settings', () => {
 
   test('whitelist sanitizes patterns (trims and removes empty)', async ({ request }) => {
     const saveRes = await request.post(`${WORKER_URL}/admin/ip_blacklist/settings`, {
-      headers: { 'x-admin-auth': ADMIN_PASSWORD },
+      headers: ADMIN_HEADERS,
       data: {
         enabled: false,
         blacklist: [],
@@ -165,7 +164,7 @@ test.describe('IP Whitelist Settings', () => {
     expect(saveRes.ok()).toBe(true);
 
     const getRes = await request.get(`${WORKER_URL}/admin/ip_blacklist/settings`, {
-      headers: { 'x-admin-auth': ADMIN_PASSWORD },
+      headers: ADMIN_HEADERS,
     });
     expect(getRes.ok()).toBe(true);
     const settings = await getRes.json();
@@ -175,7 +174,7 @@ test.describe('IP Whitelist Settings', () => {
 
   test('whitelist rejects invalid regex pattern', async ({ request }) => {
     const saveRes = await request.post(`${WORKER_URL}/admin/ip_blacklist/settings`, {
-      headers: { 'x-admin-auth': ADMIN_PASSWORD },
+      headers: ADMIN_HEADERS,
       data: { ...RESET_SETTINGS, whitelist: ['^[1.2.3.4$'] }, // invalid regex
     });
     expect(saveRes.ok()).toBe(false);
@@ -185,7 +184,7 @@ test.describe('IP Whitelist Settings', () => {
 
   test('whitelist rejects non-string elements', async ({ request }) => {
     const saveRes = await request.post(`${WORKER_URL}/admin/ip_blacklist/settings`, {
-      headers: { 'x-admin-auth': ADMIN_PASSWORD },
+      headers: ADMIN_HEADERS,
       data: { ...RESET_SETTINGS, whitelist: [1, null] },
     });
     expect(saveRes.ok()).toBe(false);
@@ -197,7 +196,7 @@ test.describe('IP Whitelist Runtime Behavior', () => {
   test('whitelist with empty list allows requests (protection mode)', async ({ request }) => {
     // Enable whitelist with empty list
     await request.post(`${WORKER_URL}/admin/ip_blacklist/settings`, {
-      headers: { 'x-admin-auth': ADMIN_PASSWORD },
+      headers: ADMIN_HEADERS,
       data: {
         enabled: false,
         blacklist: [],
@@ -219,7 +218,7 @@ test.describe('IP Whitelist Runtime Behavior', () => {
 
   test('whitelist blocks requests when IP does not match whitelist', async ({ request }) => {
     await request.post(`${WORKER_URL}/admin/ip_blacklist/settings`, {
-      headers: { 'x-admin-auth': ADMIN_PASSWORD },
+      headers: ADMIN_HEADERS,
       data: {
         ...RESET_SETTINGS,
         enableWhitelist: true,
@@ -238,7 +237,7 @@ test.describe('IP Whitelist Runtime Behavior', () => {
 
   test('fingerprint blacklist blocks even when cf-connecting-ip is absent', async ({ request }) => {
     await request.post(`${WORKER_URL}/admin/ip_blacklist/settings`, {
-      headers: { 'x-admin-auth': ADMIN_PASSWORD },
+      headers: ADMIN_HEADERS,
       data: {
         ...RESET_SETTINGS,
         enabled: true,
@@ -257,7 +256,7 @@ test.describe('IP Whitelist Runtime Behavior', () => {
   test.afterEach(async ({ request }) => {
     // Reset whitelist to disabled after each test
     await request.post(`${WORKER_URL}/admin/ip_blacklist/settings`, {
-      headers: { 'x-admin-auth': ADMIN_PASSWORD },
+      headers: ADMIN_HEADERS,
       data: {
         enabled: false,
         blacklist: [],

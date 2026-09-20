@@ -1,20 +1,40 @@
 # 管理后台
 
 > [!NOTE]
-> 需要配置 `ADMIN_PASSWORDS` 或者 `ADMIN_USER_ROLE` 才可以访问管理后台
-> 管理员角色配置：如果用户角色等于 `ADMIN_USER_ROLE`，则可以访问管理后台
+> 管理后台采用基于角色的访问控制（RBAC），没有独立的管理员密码。
+> 只有已登录且角色等于 `ADMIN_USER_ROLE`（默认 `admin`）的用户账号才能进入管理后台。
 
-部署前端应用之后，点击左上角 logo 5 次或访问 `/admin` 路径即可进入管理后台。
+部署前端应用之后，使用管理员账号登录，侧栏会出现「管理」入口；也可以直接访问 `/admin` 路径。未登录时会提示先登录，已登录但不是管理员时会提示无权访问。
 
-需要在后端配置 `ADMIN_PASSWORDS` 或者当前用户角色为 `ADMIN_USER_ROLE`，否则不允许访问管理后台。
+## 如何成为管理员
 
-## 管理员密码和用户账号的区别
+1. **引导首个管理员**：在 Worker 变量中配置 `ADMIN_USER_EMAILS`，例如 `["admin@example.com"]`。列表中的账号注册并登录后会自动获得管理员角色（即使关闭了用户注册，这些账号也允许注册）。
+2. **添加更多管理员**：进入「管理后台 → 用户」，给目标用户分配 `ADMIN_USER_ROLE` 对应的角色即可；清空角色即撤销管理员权限。
 
-`ADMIN_PASSWORDS` 是管理后台的管理员密码，不是站点用户账号，也不对应某个邮箱地址。使用管理员密码登录后可以进入后台，但它本身不能收信。
+`ADMIN_USER_ROLE` 默认为 `admin`，该角色会自动出现在可分配角色列表中，不需要在 `USER_ROLES` 里重复声明。若你在 `USER_ROLES` 中声明了同名角色，则可以顺带为管理员配置可用域名与前缀。
 
-站点用户账号存储在 `users` 表中，需要通过用户登录体系进入；用户是否能收信取决于是否创建或绑定了邮箱。即使你创建了一个用户邮箱为 `admin@example.com` 或用户名看起来像 `admin` 的普通用户，它也不会自动获得后台权限。
+## 管理员账号和邮箱地址的区别
 
-如果希望某个用户也能进入管理后台，请配置 `ADMIN_USER_ROLE`，并在用户管理中给该用户设置相同的角色。
+管理员是站点**用户账号**（`users` 表）加上管理员角色，不是某个邮箱地址。用户是否能收信取决于是否创建或绑定了邮箱；一个邮箱地址叫 `admin@example.com` 并不会自动拥有后台权限，只有 `ADMIN_USER_EMAILS` 中的账号或被分配了管理员角色的账号才能进入后台。
+
+## 在脚本中调用 Admin API
+
+所有 `/admin/*` 接口都通过 `x-user-access-token` 请求头鉴权，令牌中的 `user_role` 必须等于 `ADMIN_USER_ROLE`。获取方式：
+
+- **使用管理员账号**：先用 `POST /user_api/login` 登录得到用户 JWT，再带 `x-user-token` 请求 `GET /user_api/settings`，返回的 `access_token` 即为管理员访问令牌（有效期 1 小时，前端会自动刷新）。
+- **自动化场景**：也可以直接用 `JWT_SECRET` 签发 HS256 JWT，payload 形如 `{"user_role": "admin", "exp": <过期时间戳>}`，`exp` 必填。
+
+```python
+import requests
+
+headers = {
+    "x-user-access-token": "<管理员访问令牌>",
+    # "x-custom-auth": "<你的网站密码>",  # 如果启用了私有站点密码
+}
+print(requests.get("https://<你的worker地址>/admin/mails?limit=20&offset=0", headers=headers).json())
+```
+
+配置了 `ADMIN_API_IP_WHITELIST` 时，还需要来源 IP 在白名单内。
 
 ![admin](/feature/admin.png)
 
@@ -31,9 +51,9 @@
 
 搜索邮箱地址时，分页会自动重置到第 1 页。
 
-## 如果你的网站只可私人访问，可通过此禁用检查
+## 用户管理
 
-`DISABLE_ADMIN_PASSWORD_CHECK = true`
+「管理后台 → 用户」可以查看和搜索全部用户账号、给用户分配或清空角色（包括管理员角色）、新建用户以及删除用户。
 
 ## IP 黑名单 / 白名单
 

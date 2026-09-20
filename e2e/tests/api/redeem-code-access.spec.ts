@@ -1,20 +1,21 @@
 import { expect, test } from '@playwright/test';
-import { createHmac } from 'node:crypto';
 import {
+  ADMIN_HEADERS_ENV_OFF,
+  E2E_JWT_SECRET_SITE_PASSWORD,
+  SITE_ADMIN_HEADERS,
+  SITE_HEADERS,
   WORKER_URL_ENV_OFF,
   WORKER_URL_SITE_PASSWORD,
+  signAccessToken,
 } from '../../fixtures/test-helpers';
 
-const SITE_HEADERS = { 'x-custom-auth': 'e2e-site-pass' };
-const ADMIN_HEADERS = { ...SITE_HEADERS, 'x-admin-auth': 'e2e-admin-pass' };
+// The site-password worker signs tokens with its own secret; the project-level admin
+// header (default secret) is not valid there, so every admin call passes these explicitly.
+const ADMIN_HEADERS = SITE_ADMIN_HEADERS;
 const futureExpiration = () => new Date(Date.now() + 3_600_000).toISOString();
 
-const signTestToken = (payload: Record<string, unknown>, secret = 'e2e-site-password-secret') => {
-  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
-  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
-  const signature = createHmac('sha256', secret).update(`${header}.${body}`).digest('base64url');
-  return `${header}.${body}.${signature}`;
-};
+const signTestToken = (payload: Record<string, unknown>, secret = E2E_JWT_SECRET_SITE_PASSWORD) =>
+  signAccessToken(payload, secret);
 
 const tokenPayload = (role: string) => ({
   user_id: 1,
@@ -28,15 +29,18 @@ test.describe('Redemption feature access boundaries', () => {
     expect(settingsResponse.ok()).toBe(true);
     expect((await settingsResponse.json()).enableRedeemCode).toBe(false);
 
+    // The env-off worker has its own JWT secret, so admin calls need its admin token.
+    const headers = ADMIN_HEADERS_ENV_OFF;
     const requests = [
       request.post(`${WORKER_URL_ENV_OFF}/redeem_api/query`, { data: { code: 'anything' } }),
       request.post(`${WORKER_URL_ENV_OFF}/redeem_api/result`, { data: { code: 'anything' } }),
       request.post(`${WORKER_URL_ENV_OFF}/redeem_api/redeem`, {
         data: { code: 'anything', user_email: 'user@test.example.com' },
       }),
-      request.get(`${WORKER_URL_ENV_OFF}/admin/redeem_codes?redeem_type=role`),
-      request.get(`${WORKER_URL_ENV_OFF}/admin/redeem_codes/export?redeem_type=role&limit=1`),
+      request.get(`${WORKER_URL_ENV_OFF}/admin/redeem_codes?redeem_type=role`, { headers }),
+      request.get(`${WORKER_URL_ENV_OFF}/admin/redeem_codes/export?redeem_type=role&limit=1`, { headers }),
       request.post(`${WORKER_URL_ENV_OFF}/admin/redeem_codes/batch`, {
+        headers,
         data: {
           count: 1,
           redeem_type: 'role',
@@ -46,6 +50,7 @@ test.describe('Redemption feature access boundaries', () => {
         },
       }),
       request.put(`${WORKER_URL_ENV_OFF}/admin/redeem_codes/1`, {
+        headers,
         data: {
           redeem_type: 'role',
           value: 'case-role',
@@ -53,7 +58,7 @@ test.describe('Redemption feature access boundaries', () => {
           expires_at: futureExpiration(),
         },
       }),
-      request.delete(`${WORKER_URL_ENV_OFF}/admin/redeem_codes/1`),
+      request.delete(`${WORKER_URL_ENV_OFF}/admin/redeem_codes/1`, { headers }),
     ];
     const responses = await Promise.all(requests);
     for (const response of responses) {
@@ -72,7 +77,8 @@ test.describe('Redemption feature access boundaries', () => {
     const blockedAdminResponse = await request.post(
       `${WORKER_URL_SITE_PASSWORD}/admin/redeem_codes/batch`,
       {
-        headers: { 'x-admin-auth': 'e2e-admin-pass' },
+        // admin role token without the site password
+        headers: { 'x-user-access-token': signTestToken(tokenPayload('admin')) },
         data: {
           count: 1,
           redeem_type: 'role',
@@ -195,7 +201,6 @@ test.describe('Redemption Admin authentication', () => {
   });
   const deniedCredentials: { name: string; headers: () => Record<string, string> }[] = [
     { name: 'site password alone', headers: () => ({}) },
-    { name: 'wrong Admin password', headers: () => ({ 'x-admin-auth': 'wrong' }) },
     {
       name: 'mailbox JWT',
       headers: () => ({
@@ -230,7 +235,7 @@ test.describe('Redemption Admin authentication', () => {
   ];
 
   for (const credentials of deniedCredentials) {
-    test(`rejects ${credentials.name} on all five endpoints without changing data`, async ({ request }) => {
+    test(`rejects ${credentials.name} on all five endpoints without changing data`, async ({ request, playwright }) => {
       const original = codeData();
       const created = await request.post(`${baseUrl}/batch`, { headers: ADMIN_HEADERS, data: original });
       expect(created.ok()).toBe(true);
@@ -240,14 +245,16 @@ test.describe('Redemption Admin authentication', () => {
       const before = await beforeResponse.json();
       const row = before.results.find((item: { code: string }) => item.code === code);
       expect(row).toBeDefined();
+      // newContext() inherits the project-level admin header; clear it so only the scenario's credentials apply.
+      const denied = await playwright.request.newContext({ extraHTTPHeaders: {} });
       try {
         const headers = { ...SITE_HEADERS, ...credentials.headers() };
         const responses = await Promise.all([
-          request.get(listUrl, { headers }),
-          request.get(`${baseUrl}/export?redeem_type=address_prefix_once&limit=100`, { headers }),
-          request.post(`${baseUrl}/batch`, { headers, data: original }),
-          request.put(`${baseUrl}/${row.id}`, { headers, data: { ...original, value: 'changed' } }),
-          request.delete(`${baseUrl}/${row.id}`, { headers }),
+          denied.get(listUrl, { headers }),
+          denied.get(`${baseUrl}/export?redeem_type=address_prefix_once&limit=100`, { headers }),
+          denied.post(`${baseUrl}/batch`, { headers, data: original }),
+          denied.put(`${baseUrl}/${row.id}`, { headers, data: { ...original, value: 'changed' } }),
+          denied.delete(`${baseUrl}/${row.id}`, { headers }),
         ]);
         for (const response of responses) {
           expect(response.status(), response.url()).toBe(401);
@@ -261,17 +268,21 @@ test.describe('Redemption Admin authentication', () => {
         expect(after.ok()).toBe(true);
         expect(await after.json()).toEqual(before);
       } finally {
+        await denied.dispose();
         const deleted = await request.delete(`${baseUrl}/${row.id}`, { headers: ADMIN_HEADERS });
         expect(deleted.ok()).toBe(true);
       }
     });
   }
 
-  for (const authType of ['password', 'role token'] as const) {
-    test(`accepts a valid Admin ${authType} for all five endpoints`, async ({ request }) => {
-      const headers: Record<string, string> = authType === 'password'
-        ? ADMIN_HEADERS
-        : { ...SITE_HEADERS, 'x-user-access-token': signTestToken(tokenPayload('admin')) };
+  for (const tokenShape of ['role-only', 'with user id'] as const) {
+    test(`accepts a valid Admin role token (${tokenShape}) for all five endpoints`, async ({ request }) => {
+      const headers: Record<string, string> = {
+        ...SITE_HEADERS,
+        'x-user-access-token': signTestToken(tokenShape === 'with user id'
+          ? tokenPayload('admin')
+          : { user_role: 'admin', exp: Math.floor(Date.now() / 1000) + 3600 }),
+      };
       const original = codeData();
       const created = await request.post(`${baseUrl}/batch`, { headers, data: original });
       expect(created.ok()).toBe(true);

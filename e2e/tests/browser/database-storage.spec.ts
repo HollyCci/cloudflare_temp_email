@@ -1,7 +1,6 @@
-import { expect, test } from '@playwright/test';
-import { FRONTEND_URL, WORKER_URL } from '../../fixtures/test-helpers';
+import { expect, test } from '../../fixtures/test';
+import { ADMIN_HEADERS, FRONTEND_URL, WORKER_URL, loginAsBootstrapAdmin } from '../../fixtures/test-helpers';
 
-const ADMIN_HEADERS = { 'x-admin-auth': 'e2e-admin-pass' };
 
 test('persists the selected D1 plan and restores it after reload', async ({ page, request }) => {
   const seedResponse = await request.post(`${WORKER_URL}/admin/config`, {
@@ -10,10 +9,10 @@ test('persists the selected D1 plan and restores it after reload', async ({ page
   });
   expect(seedResponse.ok()).toBe(true);
 
-  await page.addInitScript(() => {
-    localStorage.setItem('adminAuth', 'e2e-admin-pass');
+  await page.addInitScript((jwt) => {
+    localStorage.setItem('userJwt', jwt);
     sessionStorage.setItem('adminTab', 'qucickSetup');
-  });
+  }, await loginAsBootstrapAdmin(request));
   await page.goto(`${FRONTEND_URL}/en/admin`);
 
   const storagePanel = page.locator('.storage-panel');

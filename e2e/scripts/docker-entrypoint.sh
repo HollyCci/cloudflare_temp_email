@@ -114,37 +114,42 @@ for i in $(seq 1 30); do
   sleep 1
 done
 
-echo "==> Initializing database"
-curl -sf -X POST "$WORKER_URL/admin/db_initialize" > /dev/null
-curl -sf -X POST "$WORKER_URL/admin/db_migration" > /dev/null
-echo "    Database initialized"
+# Admin APIs are role-based: mint an admin access token per worker variant (secrets match
+# fixtures/wrangler.toml.e2e*; see fixtures/access-token.ts).
+echo "==> Minting admin access tokens"
+ADMIN_TOKEN="$(node --experimental-strip-types scripts/admin-token.mjs 2>/dev/null)"
+ADMIN_TOKEN_ENV_OFF="$(node --experimental-strip-types scripts/admin-token.mjs e2e-test-secret-key-env-off 2>/dev/null)"
+ADMIN_TOKEN_SITE_PASSWORD="$(node --experimental-strip-types scripts/admin-token.mjs e2e-site-password-secret 2>/dev/null)"
+if [ -z "$ADMIN_TOKEN" ] || [ -z "$ADMIN_TOKEN_ENV_OFF" ] || [ -z "$ADMIN_TOKEN_SITE_PASSWORD" ]; then
+  echo "ERROR: failed to mint admin access tokens"
+  exit 1
+fi
+
+init_database() {
+  local label="$1" url="$2" token="$3"
+  shift 3
+  echo "==> Initializing $label database"
+  curl --connect-timeout 5 --max-time 10 -sf "$@" -H "x-user-access-token: $token" -X POST "$url/admin/db_initialize" > /dev/null
+  curl --connect-timeout 5 --max-time 10 -sf "$@" -H "x-user-access-token: $token" -X POST "$url/admin/db_migration" > /dev/null
+  echo "    $label database initialized"
+}
+
+init_database "worker" "$WORKER_URL" "$ADMIN_TOKEN"
 
 if [ -n "${WORKER_URL_SUBDOMAIN:-}" ]; then
-  echo "==> Initializing subdomain worker database"
-  curl -sf -X POST "$WORKER_URL_SUBDOMAIN/admin/db_initialize" > /dev/null
-  curl -sf -X POST "$WORKER_URL_SUBDOMAIN/admin/db_migration" > /dev/null
-  echo "    Subdomain worker database initialized"
+  init_database "subdomain worker" "$WORKER_URL_SUBDOMAIN" "$ADMIN_TOKEN"
 fi
 
 if [ -n "${WORKER_URL_ENV_OFF:-}" ]; then
-  echo "==> Initializing env-off worker database"
-  curl -sf -X POST "$WORKER_URL_ENV_OFF/admin/db_initialize" > /dev/null
-  curl -sf -X POST "$WORKER_URL_ENV_OFF/admin/db_migration" > /dev/null
-  echo "    Env-off database initialized"
+  init_database "env-off worker" "$WORKER_URL_ENV_OFF" "$ADMIN_TOKEN_ENV_OFF"
 fi
 
 if [ -n "${WORKER_GZIP_URL:-}" ]; then
-  echo "==> Initializing gzip worker database"
-  curl -sf -X POST "$WORKER_GZIP_URL/admin/db_initialize" > /dev/null
-  curl -sf -X POST "$WORKER_GZIP_URL/admin/db_migration" > /dev/null
-  echo "    Gzip worker database initialized"
+  init_database "gzip worker" "$WORKER_GZIP_URL" "$ADMIN_TOKEN"
 fi
 
 if [ -n "${WORKER_URL_SITE_PASSWORD:-}" ]; then
-  echo "==> Initializing site-password worker database"
-  curl --connect-timeout 5 --max-time 10 -sf -H "x-custom-auth: e2e-site-pass" -H "x-admin-auth: e2e-admin-pass" -X POST "$WORKER_URL_SITE_PASSWORD/admin/db_initialize" > /dev/null
-  curl --connect-timeout 5 --max-time 10 -sf -H "x-custom-auth: e2e-site-pass" -H "x-admin-auth: e2e-admin-pass" -X POST "$WORKER_URL_SITE_PASSWORD/admin/db_migration" > /dev/null
-  echo "    Site-password worker database initialized"
+  init_database "site-password worker" "$WORKER_URL_SITE_PASSWORD" "$ADMIN_TOKEN_SITE_PASSWORD" -H "x-custom-auth: e2e-site-pass"
 fi
 
 echo "==> Running Playwright tests"

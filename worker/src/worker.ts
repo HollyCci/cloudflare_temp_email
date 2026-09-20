@@ -16,7 +16,7 @@ import i18n from './i18n';
 import { ErrorCode } from './error_codes';
 import { email } from './email';
 import { scheduled } from './scheduled';
-import { getPasswords, getBooleanValue, getDomains, checkIsAdmin, getEnvStringList } from './utils';
+import { getPasswords, getBooleanValue, getDomains, getAdminRole, getEnvStringList } from './utils';
 import { checkAccessControl } from './ip_blacklist';
 
 const API_PATHS = [
@@ -247,40 +247,30 @@ app.use('/admin/*', async (c, next) => {
 		console.error("Failed to check admin API IP whitelist", e);
 	}
 
-	// check header x-admin-auth
-	if (checkIsAdmin(c)) {
-		await next();
-		return;
-	}
-	// check if user is admin
+	// Admin access is role-based: the user access token must carry the admin role.
 	const access_token = c.req.raw.headers.get("x-user-access-token");
-	if (c.env.ADMIN_USER_ROLE && access_token) {
-		try {
-			const payload = await Jwt.verify(access_token, c.env.JWT_SECRET, { alg: "HS256", exp: false });
-			// check expired
-			if (!payload.exp) return c.json({ code: ErrorCode.AUTH_ADMIN_CREDENTIAL_INVALID, message: msgs.UserAcceesTokenExpiredMsg }, 401);
-			// exp is in seconds
-			if (payload.exp < Math.floor(Date.now() / 1000)) {
-				if (getBooleanValue(c.env.DISABLE_ADMIN_PASSWORD_CHECK)) return await next();
-				return c.json({ code: ErrorCode.AUTH_USER_ACCESS_TOKEN_EXPIRED, message: msgs.UserAcceesTokenExpiredMsg }, 401);
-			}
-			if (payload.user_role !== c.env.ADMIN_USER_ROLE) {
-				return c.json({ code: ErrorCode.AUTH_ADMIN_CREDENTIAL_INVALID, message: msgs.UserRoleIsNotAdminMsg }, 401)
-			}
-			await next();
-			return;
-		} catch (e) {
-			console.error(e);
-		}
+	if (!access_token) {
+		return c.json({ code: ErrorCode.AUTH_ADMIN_CREDENTIAL_INVALID, message: msgs.AdminLoginRequiredMsg }, 401)
 	}
-
-	// disable admin api check
-	if (getBooleanValue(c.env.DISABLE_ADMIN_PASSWORD_CHECK)) {
-		await next();
-		return;
+	let payload: Awaited<ReturnType<typeof Jwt.verify>>;
+	try {
+		payload = await Jwt.verify(access_token, c.env.JWT_SECRET, { alg: "HS256", exp: false });
+	} catch (e) {
+		console.error(e);
+		return c.json({ code: ErrorCode.AUTH_ADMIN_CREDENTIAL_INVALID, message: msgs.AdminLoginRequiredMsg }, 401)
 	}
-
-	return c.json({ code: ErrorCode.AUTH_ADMIN_CREDENTIAL_INVALID, message: msgs.NeedAdminPasswordMsg }, 401)
+	if (!payload.exp) {
+		return c.json({ code: ErrorCode.AUTH_ADMIN_CREDENTIAL_INVALID, message: msgs.UserAcceesTokenExpiredMsg }, 401);
+	}
+	// exp is in seconds
+	if (payload.exp < Math.floor(Date.now() / 1000)) {
+		return c.json({ code: ErrorCode.AUTH_USER_ACCESS_TOKEN_EXPIRED, message: msgs.UserAcceesTokenExpiredMsg }, 401);
+	}
+	if (payload.user_role !== getAdminRole(c)) {
+		return c.json({ code: ErrorCode.AUTH_ADMIN_CREDENTIAL_INVALID, message: msgs.UserRoleIsNotAdminMsg }, 401)
+	}
+	c.set("userRolePayload", payload.user_role);
+	await next();
 });
 
 

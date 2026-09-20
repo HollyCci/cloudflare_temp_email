@@ -9,7 +9,7 @@
 | -------------------------- | ----------- | ------------------------------------------ | ------------------------------------ |
 | `DOMAINS`                  | JSON        | 用于临时邮箱的所有域名, 支持多个域名       | `["awsl.uk", "dreamhunter2333.xyz"]` |
 | `JWT_SECRET`               | 文本/Secret | 用于签名 JWT 的密钥，JWT 用于登录鉴权。请使用随机字符串，例如通过 `openssl rand -hex 32` 生成  | `a1b2c3d4...`                        |
-| `ADMIN_PASSWORDS`          | JSON        | admin 控制台密码, 不配置则不允许访问控制台 | `["123", "456"]`                     |
+| `ADMIN_USER_EMAILS`        | JSON        | 管理员引导账号：列表中的用户账号登录后自动获得管理员角色，可进入管理后台；即使关闭了用户注册也允许这些账号注册 | `["admin@example.com"]`              |
 | `ENABLE_USER_CREATE_EMAIL` | 文本/JSON   | 是否允许用户创建邮箱, 不配置则不允许       | `true`                               |
 | `ENABLE_USER_DELETE_EMAIL` | 文本/JSON   | 是否允许用户删除邮件, 不配置则不允许       | `true`                               |
 | `ENABLE_MAIL_READ_STATUS` | 文本/JSON | 启用邮件已读/未读状态。启用前需要升级数据库 Schema | `true` |
@@ -26,9 +26,12 @@
 | ------------------------------ | --------- | ------------------------------------ | ---------------- |
 | `PASSWORDS`                    | JSON      | 网站私有密码, 配置后需要密码才能访问 | `["123", "456"]` |
 | `ADMIN_API_IP_WHITELIST`       | JSON      | Admin API IP 白名单，配置后所有 `/admin/*` 请求仅允许列表中的 IP | `["203.0.113.10"]` |
-| `DISABLE_ADMIN_PASSWORD_CHECK` | 文本/JSON | 警告: 管理员控制台没有密码或用户检查 | `false`          |
 
-`ADMIN_API_IP_WHITELIST` 未配置或为空数组时不限制来源 IP。配置后，它会同时限制管理员密码和 Admin 用户令牌访问，只信任 Cloudflare 提供的 `CF-Connecting-IP`，缺少该请求头也会拒绝访问。
+> [!NOTE] 管理后台采用基于角色的访问控制（RBAC）
+> 管理后台没有独立的管理员密码。只有已登录且角色等于 `ADMIN_USER_ROLE`（默认 `admin`）的用户账号才能访问 `/admin/*`。
+> 首个管理员通过 `ADMIN_USER_EMAILS` 引导，之后可在「管理后台 → 用户」中给其他用户分配管理员角色。详见 [管理后台](/zh/guide/feature/admin)。
+
+`ADMIN_API_IP_WHITELIST` 未配置或为空数组时不限制来源 IP。配置后，它会限制所有携带管理员访问令牌的 `/admin/*` 请求，只信任 Cloudflare 提供的 `CF-Connecting-IP`，缺少该请求头也会拒绝访问。
 
 ## 邮箱相关变量
 
@@ -137,7 +140,8 @@
 | 变量名                                | 类型      | 说明                                                                     | 示例    |
 | ------------------------------------- | --------- | ------------------------------------------------------------------------ | ------- |
 | `USER_DEFAULT_ROLE`                   | 文本      | 新用户默认角色, 仅在启用邮件验证时有效                                   | `vip`   |
-| `ADMIN_USER_ROLE`                     | 文本      | admin 角色配置, 如果用户角色等于 ADMIN_USER_ROLE 则可以访问 admin 控制台 | `admin` |
+| `ADMIN_USER_ROLE`                     | 文本      | 管理员角色名，默认 `admin`；用户角色等于该值即可访问管理后台。该角色会自动加入可用角色列表，无需在 `USER_ROLES` 中重复声明 | `admin` |
+| `ADMIN_USER_EMAILS`                   | JSON      | 管理员引导账号列表，见上方「必填变量」                                   | `["admin@example.com"]` |
 | `USER_ROLES`                          | JSON      | -                                                                        | 见下方  |
 | `DISABLE_ANONYMOUS_USER_CREATE_EMAIL` | 文本/JSON | 禁用匿名用户创建邮箱，如果设置为 true，则用户只能在登录后创建邮箱地址    | `true`  |
 | `NO_LIMIT_SEND_ROLE`                  | 文本      | 可以无限发送邮件的角色, 多个角色使用逗号分割 `vip,admin`                 | `vip`   |
@@ -166,7 +170,7 @@
 | `STATUS_URL`               | 文本        | 状态监控页面 URL，配置后显示 Status 菜单按钮     | `https://status.example.com` |
 | `CF_TURNSTILE_SITE_KEY`    | 文本/Secret | Turnstile 人机验证配置（用于新建邮箱、注册验证码等） | `xxx`                 |
 | `CF_TURNSTILE_SECRET_KEY`  | 文本/Secret | Turnstile 人机验证配置（用于新建邮箱、注册验证码等） | `xxx`                 |
-| `ENABLE_GLOBAL_TURNSTILE_CHECK` | 文本/JSON | 启用全局登录表单的 Turnstile 人机验证（管理员登录、用户登录、邮箱密码登录），需同时配置上述 Turnstile 密钥 | `true` |
+| `ENABLE_GLOBAL_TURNSTILE_CHECK` | 文本/JSON | 启用全局登录表单的 Turnstile 人机验证（站点密码登录、地址凭证登录、用户登录、邮箱密码登录），需同时配置上述 Turnstile 密钥 | `true` |
 
 ## Telegram Bot 相关变量
 

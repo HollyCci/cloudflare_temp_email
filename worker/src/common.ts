@@ -2,7 +2,7 @@ import { Context } from 'hono';
 import { Jwt } from 'hono/utils/jwt'
 import { WorkerMailerOptions } from 'worker-mailer';
 
-import { getBooleanValue, getDomains, getStringArray, getStringValue, getIntValue, getUserRoles, getDefaultDomains, getJsonSetting, getAnotherWorkerList, hashPassword, getJsonObjectValue, getRandomSubdomainDomains, getDomainMapValue, isDomainOrSubdomain, normalizeDomains, trimLower } from './utils';
+import { getBooleanValue, getDomains, getStringArray, getStringValue, getIntValue, getUserRoles, getAdminRole, isAdminUserEmail, getDefaultDomains, getJsonSetting, getAnotherWorkerList, hashPassword, getJsonObjectValue, getRandomSubdomainDomains, getDomainMapValue, isDomainOrSubdomain, normalizeDomains, trimLower } from './utils';
 import { unbindTelegramByAddress } from './telegram_api/common';
 import { CONSTANTS } from './constants';
 import { AddressCreationSettings, AdminWebhookSettings, ExtractResult, WebhookMail, WebhookSettings } from './models';
@@ -810,6 +810,27 @@ export const commonGetUserRole = async (
         `SELECT role_text FROM user_roles where user_id = ?`
     ).bind(user_id).first<string | undefined | null>("role_text");
     return role_text ? user_roles.find((r) => r.role === role_text) : null;
+}
+
+/**
+ * Accounts listed in `ADMIN_USER_EMAILS` are always admins. This is the password-less
+ * bootstrap path: the first admin is declared in config, every other role is managed in the DB.
+ * Returns true when the role was (re)written.
+ */
+export const ensureBootstrapAdminRole = async (
+    c: Context<HonoCustomType>, user_id: number, user_email: string
+): Promise<boolean> => {
+    if (!isAdminUserEmail(c, user_email)) return false;
+    const adminRole = getAdminRole(c);
+    const current = await c.env.DB.prepare(
+        `SELECT role_text FROM user_roles where user_id = ?`
+    ).bind(user_id).first<string | undefined | null>("role_text");
+    if (current === adminRole) return false;
+    const { success } = await c.env.DB.prepare(
+        `INSERT INTO user_roles (user_id, role_text) VALUES (?, ?)`
+        + ` ON CONFLICT(user_id) DO UPDATE SET role_text = ?, updated_at = datetime('now')`
+    ).bind(user_id, adminRole, adminRole).run();
+    return success;
 }
 
 export const getAddressPrefix = async (c: Context<HonoCustomType>): Promise<string | undefined> => {

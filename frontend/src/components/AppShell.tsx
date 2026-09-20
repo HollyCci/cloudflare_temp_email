@@ -7,14 +7,22 @@ import {
   Sun,
   Tray,
 } from '@gravity-ui/icons'
-import { Button, Input, Label, Modal, TextField, Tooltip } from '@heroui/react'
+import { Avatar, Button, Input, Label, Modal, TextField, Tooltip } from '@heroui/react'
 import { AppLayout, Sidebar } from '@heroui-pro/react'
 import { useLocation, useNavigate } from 'react-router'
 import { useAppState } from '../store/app-store'
 import type { BoundAddress } from '../store/types'
 import { useI18n } from '../i18n'
 import { stripLocalePrefix, withLocale } from '../i18n/locale'
-import { MailAvatar } from './MailAvatar'
+import { getInitials } from '../utils/mail'
+
+/** What the sidebar identity card shows: who you are (name) plus a role/status caption. */
+type SidebarIdentity = {
+  name: string
+  caption: string
+  /** Initials for the avatar fallback; empty means "show the brand mark". */
+  initials: string
+}
 
 export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
@@ -25,6 +33,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     toggleTheme,
     addressSettings,
     userSettings,
+    openSettings,
     userJwt,
     addresses,
     switchingAddress,
@@ -32,9 +41,16 @@ export function AppShell({ children }: { children: ReactNode }) {
     showAuth,
     setShowAuth,
     auth,
+    showAdminPage,
   } = useAppState()
   const currentPath = stripLocalePrefix(location.pathname)
-  const identity = userSettings.user_email || addressSettings.address || t('brand')
+  const identity = resolveIdentity({
+    userEmail: userSettings.user_email,
+    isAdmin: userSettings.is_admin,
+    address: addressSettings.address,
+    siteTitle: openSettings.title || t('brand'),
+    t,
+  })
 
   return (
     <>
@@ -47,6 +63,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             currentAddress={switchingAddress || addressSettings.address}
             currentPath={currentPath}
             identity={identity}
+            isAdmin={showAdminPage}
             signedIn={Boolean(userJwt)}
             theme={theme}
             onOpenMailbox={(id) => {
@@ -66,11 +83,46 @@ export function AppShell({ children }: { children: ReactNode }) {
   )
 }
 
+/**
+ * Header identity follows the HeroUI Pro templates: line 1 is who you are,
+ * line 2 is the role/status. Priority: account → anonymous mailbox → brand.
+ */
+function resolveIdentity({
+  userEmail,
+  isAdmin,
+  address,
+  siteTitle,
+  t,
+}: {
+  userEmail: string
+  isAdmin: boolean
+  address: string
+  siteTitle: string
+  t: (key: 'roleAdmin' | 'roleSignedIn' | 'roleTempMailbox' | 'roleGuest') => string
+}): SidebarIdentity {
+  if (userEmail) {
+    return {
+      name: userEmail,
+      caption: isAdmin ? t('roleAdmin') : t('roleSignedIn'),
+      initials: getInitials(userEmail.split('@')[0]),
+    }
+  }
+  if (address) {
+    return {
+      name: address,
+      caption: t('roleTempMailbox'),
+      initials: getInitials(address.split('@')[0]),
+    }
+  }
+  return { name: siteTitle, caption: t('roleGuest'), initials: '' }
+}
+
 function MailSidebar({
   currentPath,
   currentAddress,
   identity,
   addresses,
+  isAdmin,
   signedIn,
   theme,
   onOpenMailbox,
@@ -78,8 +130,9 @@ function MailSidebar({
 }: {
   currentPath: string
   currentAddress: string
-  identity: string
+  identity: SidebarIdentity
   addresses: BoundAddress[]
+  isAdmin: boolean
   signedIn: boolean
   theme: 'light' | 'dark'
   onOpenMailbox: (id: number) => void
@@ -91,7 +144,8 @@ function MailSidebar({
   const items = [
     ...(signedIn ? [] : [{ href: withLocale('/', locale), icon: Tray, id: 'inbox', label: t('inbox'), current: inInbox }]),
     { href: withLocale('/user', locale), icon: Person, id: 'account', label: t('account'), current: currentPath === '/user' },
-    { href: withLocale('/admin', locale), icon: Gear, id: 'admin', label: t('admin'), current: currentPath === '/admin' },
+    // Admin console is role-gated; only render the entry when the account holds the admin role.
+    ...(isAdmin ? [{ href: withLocale('/admin', locale), icon: Gear, id: 'admin', label: t('admin'), current: currentPath === '/admin' }] : []),
   ]
 
   return (
@@ -143,7 +197,7 @@ function SidebarBody({
   onToggleTheme,
 }: {
   idPrefix?: string
-  identity: string
+  identity: SidebarIdentity
   items: { href: string; icon: typeof Tray; id: string; label: string; current: boolean }[]
   addresses: BoundAddress[]
   currentAddress: string
@@ -160,10 +214,16 @@ function SidebarBody({
     <>
       <Sidebar.Header>
         <div className="flex items-center gap-3 px-1 py-1">
-          <MailAvatar className="size-9" name={identity} portrait seed={identity} />
+          <Avatar className="size-9 shrink-0" color="default" variant="soft">
+            <Avatar.Fallback>
+              {identity.initials || <Envelope className="size-4" />}
+            </Avatar.Fallback>
+          </Avatar>
           <div className="flex min-w-0 flex-col" data-sidebar="label">
-            <span className="text-foreground text-sm font-medium leading-tight">{t('you')}</span>
-            <span className="text-muted truncate text-xs font-medium leading-tight">{identity}</span>
+            <span className="text-foreground truncate text-sm font-medium leading-tight" title={identity.name}>
+              {identity.name}
+            </span>
+            <span className="text-muted truncate text-xs font-medium leading-tight">{identity.caption}</span>
           </div>
         </div>
       </Sidebar.Header>
@@ -211,8 +271,8 @@ function SidebarBody({
         </Sidebar.Group>
       </Sidebar.Content>
       <Sidebar.Footer>
-        <div className="flex flex-col gap-2 px-2 pb-1">
-          <Button fullWidth size="sm" onPress={onCreate}>
+        <div className="flex items-center gap-1 px-2 pb-1">
+          <Button className="flex-1" size="sm" onPress={onCreate}>
             <Envelope className="size-4" />
             {t('createAddress')}
           </Button>

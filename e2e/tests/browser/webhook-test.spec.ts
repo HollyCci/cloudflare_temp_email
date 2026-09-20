@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../../fixtures/test';
 import { FRONTEND_URL } from '../../fixtures/test-helpers';
 
 for (const [locale, mails, webhook, testLabel, specified, mailId, invalid] of [

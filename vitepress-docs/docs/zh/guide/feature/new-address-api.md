@@ -16,7 +16,10 @@
 
 ## 通过 admin API 新建邮箱地址
 
-这是一个 `python` 的例子，使用 `requests` 库发送邮件。
+这是一个 `python` 的例子，使用 `requests` 库新建邮箱地址。
+
+> [!NOTE]
+> `/admin/*` 接口使用 `x-user-access-token` 请求头鉴权，令牌需携带管理员角色。获取方式见 [管理后台 → 在脚本中调用 Admin API](/zh/guide/feature/admin#在脚本中调用-admin-api)。
 
 ```python
 res = requests.post(
@@ -29,7 +32,7 @@ res = requests.post(
         "domain": "<邮箱域名>",
     },
     headers={
-        'x-admin-auth': "<你的网站admin密码>",
+        'x-user-access-token': "<管理员访问令牌>",
         # "x-custom-auth": "<你的网站密码>", # 如果启用了私有站点密码
         "Content-Type": "application/json"
     }
@@ -53,7 +56,7 @@ res = requests.post(
         "domain": "team.example.com",
     },
     headers={
-        'x-admin-auth': "<你的网站admin密码>",
+        'x-user-access-token': "<管理员访问令牌>",
         "Content-Type": "application/json"
     }
 )
@@ -98,7 +101,7 @@ def fetch_email_data(name):
                 "domain": "<邮箱域名>",
             },
             headers={
-                'x-admin-auth': "<你的网站admin密码>",
+                'x-user-access-token': "<管理员访问令牌>",
                 # "x-custom-auth": "<你的网站密码>", # 如果启用了私有站点密码
                 "Content-Type": "application/json"
             }

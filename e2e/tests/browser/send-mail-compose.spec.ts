@@ -1,8 +1,11 @@
-import { test, expect, request as apiRequest, type Page } from '@playwright/test';
+import { request as apiRequest, type Page } from '@playwright/test';
+import { expect, test } from '../../fixtures/test';
 import {
+  ADMIN_HEADERS,
   FRONTEND_URL,
   createTestAddress,
   deleteAddress,
+  loginAsBootstrapAdmin,
   requestSendAccess,
 } from '../../fixtures/test-helpers';
 
@@ -29,7 +32,7 @@ const expectEditorOriginsToAlign = async (page: Page) => {
 
 test.describe('Send mail composer', () => {
   test('edits a draft, changes format, and previews HTML', async ({ page }) => {
-    const api = await apiRequest.newContext();
+    const api = await apiRequest.newContext({ extraHTTPHeaders: ADMIN_HEADERS });
     let jwt: string | undefined;
 
     try {
@@ -110,11 +113,11 @@ test.describe('Send mail composer', () => {
     }
   });
 
-  test('keeps the Admin field order and editor placeholder aligned', async ({ page }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem('adminAuth', 'e2e-admin-pass');
+  test('keeps the Admin field order and editor placeholder aligned', async ({ page, request }) => {
+    await page.addInitScript((jwt) => {
+      localStorage.setItem('userJwt', jwt);
       sessionStorage.setItem('adminTab', 'mails');
-    });
+    }, await loginAsBootstrapAdmin(request));
     await page.goto(`${FRONTEND_URL}/en/admin`);
     await page.getByText('Send Mail', { exact: true }).click();
 

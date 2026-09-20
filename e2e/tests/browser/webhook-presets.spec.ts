@@ -1,12 +1,12 @@
-import { test, expect } from '@playwright/test';
-import { FRONTEND_URL, createTestAddress, deleteAddress } from '../../fixtures/test-helpers';
+import { expect, test } from '../../fixtures/test';
+import { ADMIN_HEADERS, FRONTEND_URL, createTestAddress, deleteAddress } from '../../fixtures/test-helpers';
 import { request as apiRequest } from '@playwright/test';
 
 test.describe('Webhook Presets', () => {
   test('selecting each preset fills valid settings', async ({ page, context }) => {
     test.setTimeout(60_000);
 
-    const api = await apiRequest.newContext();
+    const api = await apiRequest.newContext({ extraHTTPHeaders: ADMIN_HEADERS });
     let jwt: string | undefined;
 
     // Block popups (presets open doc URLs in new tabs)

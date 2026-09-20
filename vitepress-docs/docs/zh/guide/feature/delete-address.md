@@ -10,7 +10,7 @@ DELETE /admin/delete_address/:id
 
 请求头：
 
-- `x-admin-auth: <admin_password>`
+- `x-user-access-token: <管理员访问令牌>`（获取方式见 [管理后台 → 在脚本中调用 Admin API](/zh/guide/feature/admin#在脚本中调用-admin-api)）
 
 返回示例：
 

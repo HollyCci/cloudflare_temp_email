@@ -10,7 +10,7 @@ DELETE /admin/delete_address/:id
 
 Header:
 
-- `x-admin-auth: <admin_password>`
+- `x-user-access-token: <admin access token>` (see [Admin Console → Calling Admin APIs from Scripts](/en/guide/feature/admin#calling-admin-apis-from-scripts))
 
 Example response:
 

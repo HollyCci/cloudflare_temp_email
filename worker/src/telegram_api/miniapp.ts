@@ -2,7 +2,7 @@ import { Context } from "hono";
 import { verifyAddressToken } from '../address_auth';
 import { CONSTANTS } from "../constants";
 import { bindTelegramAddress, jwtListToAddressData, tgUserNewAddress, unbindTelegramAddress } from "./common";
-import { checkCfTurnstile, checkIsAdmin, getBooleanValue } from "../utils";
+import { checkCfTurnstile, hasAdminAccessToken, getBooleanValue } from "../utils";
 import { resolveRawEmailRow } from "../gzip";
 import { TelegramSettings } from "./settings";
 import i18n from "../i18n";
@@ -138,7 +138,7 @@ async function getMail(c: Context<HonoCustomType>): Promise<Response> {
     const { initData, mailId } = await c.req.json();
     const msgs = i18n.getMessagesbyContext(c);
     try {
-        if (checkIsAdmin(c)) {
+        if (await hasAdminAccessToken(c)) {
             const result = await c.env.DB.prepare(
                 `SELECT * FROM raw_mails where id = ?`
             ).bind(mailId).first();

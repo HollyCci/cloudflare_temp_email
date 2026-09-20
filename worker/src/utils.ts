@@ -1,4 +1,5 @@
 import { Context } from "hono";
+import { Jwt } from "hono/utils/jwt";
 import { UserSettings, RoleAddressConfig } from "./models";
 import { CONSTANTS } from "./constants";
 
@@ -251,7 +252,41 @@ export const getRandomSubdomainDomains = (c: Context<HonoCustomType>): string[] 
     return normalizeDomains(getStringArray(c.env.RANDOM_SUBDOMAIN_DOMAINS));
 }
 
-export const getUserRoles = (c: Context<HonoCustomType>): UserRole[] => {
+const DEFAULT_ADMIN_ROLE = "admin";
+
+/** Name of the role that grants access to `/admin/*`. Defaults to `admin`. */
+export const getAdminRole = (c: Context<HonoCustomType>): string => {
+    return getStringValue(c.env.ADMIN_USER_ROLE) || DEFAULT_ADMIN_ROLE;
+}
+
+/** Account emails that are always granted the admin role (bootstrap without a password). */
+export const getAdminUserEmails = (c: Context<HonoCustomType>): string[] => {
+    return getEnvStringList(c.env.ADMIN_USER_EMAILS).map(trimLower);
+}
+
+export const isAdminUserEmail = (c: Context<HonoCustomType>, email: string | undefined | null): boolean => {
+    if (!email) return false;
+    return getAdminUserEmails(c).includes(trimLower(email));
+}
+
+/**
+ * True when the request carries a valid, unexpired `x-user-access-token` whose role is the admin role.
+ * Used outside `/admin/*` where the middleware does not run (e.g. Telegram mini app).
+ */
+export const hasAdminAccessToken = async (c: Context<HonoCustomType>): Promise<boolean> => {
+    const token = c.req.raw.headers.get("x-user-access-token");
+    if (!token) return false;
+    try {
+        const payload = await Jwt.verify(token, c.env.JWT_SECRET, { alg: "HS256", exp: false });
+        if (!payload.exp || payload.exp < Math.floor(Date.now() / 1000)) return false;
+        return payload.user_role === getAdminRole(c);
+    } catch (e) {
+        console.error(e);
+        return false;
+    }
+}
+
+const parseConfiguredRoles = (c: Context<HonoCustomType>): UserRole[] => {
     if (!c.env.USER_ROLES) {
         return [];
     }
@@ -275,6 +310,17 @@ export const getUserRoles = (c: Context<HonoCustomType>): UserRole[] => {
         }
     }
     return normalizeRoles(c.env.USER_ROLES);
+}
+
+/**
+ * Role catalog: `USER_ROLES` plus the admin role, which always exists so it can be
+ * assigned even when the operator did not list it explicitly.
+ */
+export const getUserRoles = (c: Context<HonoCustomType>): UserRole[] => {
+    const roles = parseConfiguredRoles(c);
+    const adminRole = getAdminRole(c);
+    if (roles.some((role) => role.role === adminRole)) return roles;
+    return [...roles, { role: adminRole, domains: null, prefix: null }];
 }
 
 export const getAnotherWorkerList = (c: Context<HonoCustomType>): AnotherWorker[] => {
@@ -310,30 +356,6 @@ export const getPasswords = (c: Context<HonoCustomType>): string[] => {
     return c.env.PASSWORDS.filter((item) => item.length > 0);
 }
 
-export const getAdminPasswords = (c: Context<HonoCustomType>): string[] => {
-    if (!c.env.ADMIN_PASSWORDS) {
-        return [];
-    }
-    // check if ADMIN_PASSWORDS is an array, if not use json.parse
-    if (!Array.isArray(c.env.ADMIN_PASSWORDS)) {
-        try {
-            const res = JSON.parse(c.env.ADMIN_PASSWORDS) as string[];
-            return res.filter((item) => item.length > 0);
-        } catch (e) {
-            console.error("Failed to parse ADMIN_PASSWORDS", e);
-            return [];
-        }
-    }
-    return c.env.ADMIN_PASSWORDS.filter((item) => item.length > 0);
-}
-
-export const checkIsAdmin = (c: Context<HonoCustomType>): boolean => {
-    const adminPasswords = getAdminPasswords(c);
-    if (!adminPasswords.length) return false;
-    const adminAuth = c.req.raw.headers.get("x-admin-auth");
-    return !!adminAuth && adminPasswords.includes(adminAuth);
-}
-
 export const getEnvStringList = (value: string | string[] | undefined): string[] => {
     if (!value) {
         return [];
@@ -344,7 +366,7 @@ export const getEnvStringList = (value: string | string[] | undefined): string[]
             const res = JSON.parse(value) as string[];
             return res.filter((item) => item.length > 0);
         } catch (e) {
-            console.error("Failed to parse ADMIN_PASSWORDS", e);
+            console.error("Failed to parse string list env", e);
             return [];
         }
     }
@@ -456,10 +478,12 @@ export default {
     getDomains,
     getRandomSubdomainDomains,
     getUserRoles,
+    getAdminRole,
+    getAdminUserEmails,
+    isAdminUserEmail,
+    hasAdminAccessToken,
     getAnotherWorkerList,
     getPasswords,
-    getAdminPasswords,
-    checkIsAdmin,
     getEnvStringList,
     isGlobalTurnstileEnabled,
     checkCfTurnstile,

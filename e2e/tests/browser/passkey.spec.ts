@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '../../fixtures/test';
 import { request as apiRequest } from '@playwright/test';
 import { createHash } from 'crypto';
-import { WORKER_URL, FRONTEND_URL } from '../../fixtures/test-helpers';
+import { ADMIN_HEADERS, WORKER_URL, FRONTEND_URL } from '../../fixtures/test-helpers';
 
 const TEST_USER_EMAIL = `passkey-browser-${Date.now()}@test.example.com`;
 const TEST_USER_PASSWORD = 'browser-test-pwd-123';
@@ -14,7 +14,7 @@ test.describe('Passkey Browser Flow', () => {
   let userJwt: string;
 
   test.beforeAll(async () => {
-    const api = await apiRequest.newContext();
+    const api = await apiRequest.newContext({ extraHTTPHeaders: ADMIN_HEADERS });
     try {
       // Enable user registration
       await api.post(`${WORKER_URL}/admin/user_settings`, {

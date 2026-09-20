@@ -1,6 +1,8 @@
-import { expect, request as apiRequest, test, type APIRequestContext } from '@playwright/test';
+import { request as apiRequest, type APIRequestContext } from '@playwright/test';
+import { expect, test } from '../../fixtures/test';
 
 import {
+  ADMIN_HEADERS,
   FRONTEND_URL,
   WORKER_URL,
   createTestAddress,
@@ -27,7 +29,7 @@ async function createUser(request: APIRequestContext) {
 
 test.describe('User send mail page', () => {
   test('selects a bound address, sends mail, and opens its sent items', async ({ page }) => {
-    const request = await apiRequest.newContext();
+    const request = await apiRequest.newContext({ extraHTTPHeaders: ADMIN_HEADERS });
     const addresses: Awaited<ReturnType<typeof createTestAddress>>[] = [];
     let userId: number | undefined;
     let originalUserSettings: Record<string, unknown> | undefined;

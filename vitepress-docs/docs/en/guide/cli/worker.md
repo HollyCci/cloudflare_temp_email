@@ -65,9 +65,9 @@ DOMAINS = ["xxx.xxx1" , "xxx.xxx2"]
 # Use a random string, e.g. generated via: openssl rand -hex 32
 JWT_SECRET = "xxx"
 
-# Admin console password, if not configured, console access is not allowed
-# ADMIN_PASSWORDS = ["123", "456"]
-# Admin API IP whitelist; applies to admin-password and Admin user-token access
+# Admin Console is role-based (RBAC): listed user accounts get the admin role on login
+# ADMIN_USER_EMAILS = ["admin@example.com"]
+# Admin API IP whitelist; restricts the source IP of every /admin/* request
 # ADMIN_API_IP_WHITELIST = ["203.0.113.10"]
 
 # Whether to allow users to create emails, not allowed if not configured

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../../fixtures/test';
 import { FRONTEND_URL, TEST_DOMAIN, deleteAddress } from '../../fixtures/test-helpers';
 
 test('create an address with a custom subdomain from the UI', async ({ page, request }) => {

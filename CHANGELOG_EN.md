@@ -10,8 +10,17 @@
 
 ### Features
 
+- feat: |Auth| **Breaking**: the Admin Console now uses role-based access control (RBAC). Remove `ADMIN_PASSWORDS`, `DISABLE_ADMIN_PASSWORD_CHECK`, the `x-admin-auth` header and the `/open_api/admin_login` endpoint; `/admin/*` only accepts an `x-user-access-token` whose role equals `ADMIN_USER_ROLE` (default `admin`). Admin mail access from the Telegram mini app checks the admin token as well
+- feat: |Worker| Add `ADMIN_USER_EMAILS` admin bootstrap: listed accounts are granted the admin role on login and may register while user registration is disabled; `ADMIN_USER_ROLE` defaults to `admin` and is always included in the available roles, so it need not be repeated in `USER_ROLES`
+- feat: |Frontend| Show the sidebar Admin entry only to admin accounts; `/admin` distinguishes guest / no access / admin states, and the admin password card and `adminAuth` storage are removed
+- feat: |Admin| Add a Users tab: list and search users, assign or clear roles (including the admin role), create and delete users
+- refactor: |e2e| Authenticate `/admin/*` in tests with an admin access token signed by `JWT_SECRET` (`fixtures/access-token.ts`, `scripts/admin-token.mjs`), initialize databases from the Docker entrypoint with that token, drop password-semantics specs and add a React admin access-control spec
+- docs: |Docs| Update the admin authentication notes in Worker variables, Admin Console, Admin API examples, CLI/UI deployment and common issues (zh + en)
 - feat: |Frontend| Replace Vue 3 + Naive UI with React 19 + HeroUI Pro for inbox, account, and admin core flows
 - feat: |Frontend| Remove the sidebar Chinese/English language toggle and keep the UI in Chinese
+- feat: |Frontend| Move the theme toggle to the right of Create address in the sidebar footer
+- feat: |Frontend| Align the sidebar identity card with the HeroUI Pro templates: first line shows account email / current address / site name, second line shows Admin, Signed in, Temp mailbox or Not signed in, and the avatar uses initials instead of a random portrait
+- fix: |Frontend| Do not treat the create-address placeholder as a username, and stop silently generating a random address when the name is empty
 - feat: |Frontend| Align the inbox with the HeroUI Pro Email template: folder sidebar, message list, and detail pane
 - feat: |Frontend| Restore the three subdomain modes (none/random/custom) when creating an address, shared by the web UI and admin panel; shown only for base domains listed in `RANDOM_SUBDOMAIN_DOMAINS`
 

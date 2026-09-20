@@ -2,9 +2,9 @@ import { Context } from "hono";
 
 import i18n from "../i18n";
 import { UserOauth2Settings, UserSettings } from "../models";
-import { getJsonSetting, getUserRoles } from "../utils"
+import { getJsonSetting, getAdminRole } from "../utils"
 import { CONSTANTS } from "../constants";
-import { commonGetUserRole, updateUserAddressesUpdatedAt } from "../common";
+import { commonGetUserRole, ensureBootstrapAdminRole, updateUserAddressesUpdatedAt } from "../common";
 import { Jwt } from "hono/utils/jwt";
 
 export default {
@@ -34,18 +34,15 @@ export default {
         const user = c.get("userPayload");
         const msgs = i18n.getMessagesbyContext(c);
         // check if user exists
-        const db_user_id = await c.env.DB.prepare(
-            `SELECT id FROM users where id = ?`
-        ).bind(user.user_id).first<number | undefined | null>("id");
-        if (!db_user_id) {
+        const db_user = await c.env.DB.prepare(
+            `SELECT id, user_email FROM users where id = ?`
+        ).bind(user.user_id).first<{ id: number, user_email: string }>();
+        if (!db_user) {
             return c.text(msgs.UserNotFoundMsg, 400);
         }
-        const user_role = await commonGetUserRole(c, db_user_id);
-        const is_admin = (
-            c.env.ADMIN_USER_ROLE
-            &&
-            c.env.ADMIN_USER_ROLE === user_role?.role
-        );
+        await ensureBootstrapAdminRole(c, db_user.id, db_user.user_email);
+        const user_role = await commonGetUserRole(c, db_user.id);
+        const is_admin = getAdminRole(c) === user_role?.role;
         const access_token = user_role?.role ? await Jwt.sign({
             user_email: user.user_email,
             user_id: user.user_id,

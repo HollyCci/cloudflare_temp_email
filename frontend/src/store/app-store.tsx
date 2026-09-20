@@ -49,16 +49,12 @@ type AppState = {
   setJwt: (value: string) => void
   userJwt: string
   setUserJwt: (value: string) => void
-  adminAuth: string
-  setAdminAuth: (value: string) => void
   auth: string
   setAuth: (value: string) => void
   loading: boolean
   setLoading: (value: boolean) => void
   showAuth: boolean
   setShowAuth: (value: boolean) => void
-  showAdminAuth: boolean
-  setShowAdminAuth: (value: boolean) => void
   openSettings: OpenSettings
   setOpenSettings: (value: OpenSettings) => void
   userOpenSettings: UserOpenSettings
@@ -79,6 +75,7 @@ type AppState = {
   openMailbox: (target: { id: number; name: string }) => Promise<boolean>
   finishAddressSwitch: (address: string) => void
   invalidateAddressSwitch: () => void
+  /** True when the signed-in account holds the admin role. Admin access is role-based only. */
   showAdminPage: boolean
 }
 
@@ -89,11 +86,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<'light' | 'dark'>(readTheme)
   const [jwt, setJwtState] = useState(() => readRaw('jwt'))
   const [userJwt, setUserJwtState] = useState(() => readRaw('userJwt'))
-  const [adminAuth, setAdminAuthState] = useState(() => readRaw('adminAuth'))
   const [auth, setAuthState] = useState(() => readRaw('auth'))
   const [loading, setLoading] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
-  const [showAdminAuth, setShowAdminAuth] = useState(false)
   const [openSettings, setOpenSettings] = useState<OpenSettings>({ ...emptyOpenSettings })
   const [userOpenSettings, setUserOpenSettings] = useState<UserOpenSettings>({
     fetched: false,
@@ -166,10 +161,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setUserJwtState(value)
     writeRaw('userJwt', value)
   }, [])
-  const setAdminAuth = useCallback((value: string) => {
-    setAdminAuthState(value)
-    writeRaw('adminAuth', value)
-  }, [])
   const setAuth = useCallback((value: string) => {
     setAuthState(value)
     writeRaw('auth', value)
@@ -188,30 +179,25 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     session.locale = locale
     session.jwt = jwt
     session.userJwt = userJwt
-    session.adminAuth = adminAuth
     session.auth = auth
     session.userSettings = userSettings
     session.openSettings = openSettings
     session.showAuth = showAuth
-    session.showAdminAuth = showAdminAuth
     session.loading = loading
     session.setUserSettings = setUserSettings
     session.setShowAuth = setShowAuth
-    session.setShowAdminAuth = setShowAdminAuth
     session.setLoading = setLoading
   }, [
-    locale, jwt, userJwt, adminAuth, auth, userSettings, openSettings,
-    showAuth, showAdminAuth, loading, setUserSettings,
+    locale, jwt, userJwt, auth, userSettings, openSettings,
+    showAuth, loading, setUserSettings,
   ])
 
-  const showAdminPage = Boolean(
-    adminAuth || userSettings.is_admin || openSettings.disableAdminPasswordCheck,
-  )
+  const showAdminPage = Boolean(userJwt && userSettings.is_admin)
 
   const value = useMemo<AppState>(() => ({
     locale, setLocale, theme, toggleTheme,
-    jwt, setJwt, userJwt, setUserJwt, adminAuth, setAdminAuth, auth, setAuth,
-    loading, setLoading, showAuth, setShowAuth, showAdminAuth, setShowAdminAuth,
+    jwt, setJwt, userJwt, setUserJwt, auth, setAuth,
+    loading, setLoading, showAuth, setShowAuth,
     openSettings, setOpenSettings, userOpenSettings, setUserOpenSettings,
     userSettings, setUserSettings, addressSettings, setAddressSettings,
     addresses, setAddresses, addressesFetched, setAddressesFetched,
@@ -219,7 +205,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     finishAddressSwitch, invalidateAddressSwitch, showAdminPage,
   }), [
     locale, setLocale, theme, toggleTheme, jwt, setJwt, userJwt, setUserJwt,
-    adminAuth, setAdminAuth, auth, setAuth, loading, showAuth, showAdminAuth,
+    auth, setAuth, loading, showAuth,
     openSettings, userOpenSettings, userSettings, setUserSettings,
     addressSettings, addresses, addressesFetched, switchingAddress, addressOpenFailed,
     inboxEpoch, openMailbox, finishAddressSwitch, invalidateAddressSwitch, showAdminPage,

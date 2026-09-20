@@ -50,8 +50,6 @@ const apiFetch = async (path: string, options: FetchOptions = {}) => {
     if (userAccessHeader) headers['x-user-access-token'] = userAccessHeader
     const customAuthHeader = safeHeaderValue(session.auth)
     if (customAuthHeader) headers['x-custom-auth'] = customAuthHeader
-    const adminAuthHeader = safeHeaderValue(session.adminAuth)
-    if (adminAuthHeader) headers['x-admin-auth'] = adminAuthHeader
     const authorizationHeader = safeBearerHeader(session.jwt)
     if (authorizationHeader) headers.Authorization = authorizationHeader
 
@@ -62,7 +60,6 @@ const apiFetch = async (path: string, options: FetchOptions = {}) => {
       headers,
     })
     const response = await interceptResponse(path, initialResponse)
-    if (ErrorCode.isAdminAuthError(response)) session.setShowAdminAuth(true)
     if (ErrorCode.isSiteAuthError(response)) session.setShowAuth(true)
     if (response.status >= 300) {
       throw new Error(`[${response.status}]: ${response.data?.message || response.data}`)

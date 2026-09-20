@@ -8,7 +8,7 @@ const messages: LocaleMessages = {
     UserTokenExpiredMsg: "Your token has expired, please login again",
     UserAcceesTokenExpiredMsg: "Your access token has expired, please refresh the page",
     UserRoleIsNotAdminMsg: "Your user role is not admin, no access to visit this page",
-    NeedAdminPasswordMsg: "You need to provide the admin password to access this page",
+    AdminLoginRequiredMsg: "Sign in with an admin account to access this page",
     AdminApiIpNotAllowedMsg: "Your IP address isn't on the admin whitelist",
 
     KVNotAvailableMsg: "KV is not available, please contact the administrator",

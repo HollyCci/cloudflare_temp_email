@@ -1,6 +1,8 @@
-import { expect, request as apiRequest, test } from '@playwright/test';
+import { request as apiRequest } from '@playwright/test';
+import { expect, test } from '../../fixtures/test';
 
 import {
+  ADMIN_HEADERS,
   FRONTEND_URL,
   WORKER_URL,
   createTestAddress,
@@ -9,7 +11,7 @@ import {
 } from '../../fixtures/test-helpers';
 
 test('keeps refresh unread and supports automatic and manual state changes', async ({ page }) => {
-  const request = await apiRequest.newContext();
+  const request = await apiRequest.newContext({ extraHTTPHeaders: ADMIN_HEADERS });
   let jwt: string | undefined;
   try {
     const mailbox = await createTestAddress(request, 'mail-read-browser');

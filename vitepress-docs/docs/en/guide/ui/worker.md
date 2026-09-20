@@ -52,7 +52,7 @@
     | `PREFIX`                   | Text        | Default prefix for new email names, can be omitted if no prefix needed | `tmp`                                |
     | `DOMAINS`                  | JSON        | All domains for temporary email, supports multiple domains             | `["awsl.uk", "dreamhunter2333.xyz"]` |
     | `JWT_SECRET`               | Text/Secret | Secret for generating JWT, JWT is used for login and authentication    | `xxx`                                |
-    | `ADMIN_PASSWORDS`          | JSON        | Admin console password, console access not allowed if not configured   | `["123", "456"]`                     |
+    | `ADMIN_USER_EMAILS`        | JSON        | Bootstrap admin accounts; listed users get the admin role on login     | `["admin@example.com"]`              |
     | `ENABLE_USER_CREATE_EMAIL` | Text/JSON   | Whether to allow users to create emails, not allowed if not configured | `true`                               |
     | `ENABLE_USER_DELETE_EMAIL` | Text/JSON   | Whether to allow users to delete emails, not allowed if not configured | `true`                               |
 

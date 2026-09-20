@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { WORKER_GZIP_URL, TEST_DOMAIN } from '../../fixtures/test-helpers';
+import { ADMIN_HEADERS, WORKER_GZIP_URL, TEST_DOMAIN } from '../../fixtures/test-helpers';
 
 /**
  * These tests run against a worker instance with ENABLE_MAIL_GZIP=true.
@@ -156,7 +156,7 @@ test.describe('Mail Gzip Storage', () => {
       const mailId = results[0].id;
 
       const detailRes = await request.get(`${WORKER_GZIP_URL}/admin/mails/${mailId}`, {
-        headers: { 'x-admin-auth': 'e2e-admin-pass' },
+        headers: ADMIN_HEADERS,
       });
       expect(detailRes.ok()).toBe(true);
       const mail = await detailRes.json();

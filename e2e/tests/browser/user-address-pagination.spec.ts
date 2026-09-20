@@ -1,7 +1,9 @@
-import { expect, request as apiRequest, test } from '@playwright/test';
+import { request as apiRequest } from '@playwright/test';
+import { expect, test } from '../../fixtures/test';
 import type { APIRequestContext } from '@playwright/test';
 
 import {
+  ADMIN_HEADERS,
   FRONTEND_URL,
   WORKER_URL,
   createTestAddress,
@@ -45,7 +47,7 @@ test.describe('User address pagination browser flow', () => {
   test('paginates addresses and filters mail', async ({ page }) => {
     test.setTimeout(120_000);
 
-    const request = await apiRequest.newContext();
+    const request = await apiRequest.newContext({ extraHTTPHeaders: ADMIN_HEADERS });
     const createdAddresses: Awaited<ReturnType<typeof createTestAddress>>[] = [];
     let originalUserSettings: Record<string, unknown> | undefined;
     let userId: number | undefined;

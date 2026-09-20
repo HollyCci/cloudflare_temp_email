@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { WORKER_URL, createTestAddress, seedTestMail, deleteAddress } from '../../fixtures/test-helpers';
+import { ADMIN_HEADERS, WORKER_URL, createTestAddress, seedTestMail, deleteAddress } from '../../fixtures/test-helpers';
 
-const ADMIN_HEADERS = { 'x-admin-auth': 'e2e-admin-pass' };
 
 test.describe('Mail Detail', () => {
   test('fetch a single mail by ID', async ({ request }) => {

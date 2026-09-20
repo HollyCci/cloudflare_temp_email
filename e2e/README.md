@@ -51,8 +51,15 @@ Test results and HTML reports are exported via volumes:
 ## Configuration
 
 The E2E worker uses `fixtures/wrangler.toml.e2e` with:
-- `DISABLE_ADMIN_PASSWORD_CHECK = true` — allows unauthenticated admin calls
+- `ADMIN_USER_EMAILS = ["admin@test.example.com"]` — bootstrap admin account for browser tests (`loginAsBootstrapAdmin`)
 - `DEFAULT_SEND_BALANCE = 10` — allows sending without admin approval
 - SMTP pointed at Mailpit container (`mailpit:1025`)
+
+Admin APIs are role-based (`x-user-access-token` carrying the `admin` role); there is no admin password.
+`fixtures/access-token.ts` signs tokens with the fixture `JWT_SECRET`s:
+- API projects attach an admin token to every `request` call via `extraHTTPHeaders` in `playwright.config.ts`.
+- Browser tests import `test` from `fixtures/test.ts`, whose `request` fixture does the same.
+- `ADMIN_HEADERS` / `ADMIN_HEADERS_ENV_OFF` / `SITE_ADMIN_HEADERS` in `fixtures/test-helpers.ts` target the individual worker variants.
+- `scripts/docker-entrypoint.sh` mints the tokens used for database initialization with `scripts/admin-token.mjs`.
 
 Test-only endpoints under `/__test/*` are registered in `e2e/fixtures/worker.ts` and are excluded from the production Worker.

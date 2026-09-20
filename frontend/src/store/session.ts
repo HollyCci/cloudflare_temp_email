@@ -4,17 +4,14 @@ export type Session = {
   locale: string
   jwt: string
   userJwt: string
-  adminAuth: string
   auth: string
   fingerprint: string
   userSettings: UserSettings
   openSettings: OpenSettings
   showAuth: boolean
-  showAdminAuth: boolean
   loading: boolean
   setUserSettings: (next: Partial<UserSettings>) => void
   setShowAuth: (next: boolean) => void
-  setShowAdminAuth: (next: boolean) => void
   setLoading: (next: boolean) => void
 }
 
@@ -54,7 +51,6 @@ const defaultOpenSettings: OpenSettings = {
   enableSendMail: false,
   showGithub: true,
   showGithubForUser: true,
-  disableAdminPasswordCheck: false,
   enableAddressPassword: false,
   enableAgentEmailInfo: false,
   enableRedeemCode: false,
@@ -67,17 +63,14 @@ export const session: Session = {
   locale: 'zh',
   jwt: '',
   userJwt: '',
-  adminAuth: '',
   auth: '',
   fingerprint: '',
   userSettings: { ...defaultUserSettings },
   openSettings: { ...defaultOpenSettings },
   showAuth: false,
-  showAdminAuth: false,
   loading: false,
   setUserSettings: () => {},
   setShowAuth: () => {},
-  setShowAdminAuth: () => {},
   setLoading: () => {},
 }
 

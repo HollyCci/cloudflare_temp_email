@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { expect, test } from '../../fixtures/test';
 import { createHmac } from 'node:crypto';
 import { FRONTEND_URL, WORKER_URL, createTestAddress, deleteAddress, hashPassword, getAddressSender, onMailpitMessage } from '../../fixtures/test-helpers';
 
@@ -17,22 +18,22 @@ const openApiTestPage = async (page: Page) => {
 
 const expiredTokenResponse = { status: 401, json: { code: 'AUTH_USER_ACCESS_TOKEN_EXPIRED', message: 'Access token expired' } };
 
+// Admin access is role-based (no admin password dialog); only the site password opens a dialog.
 for (const scenario of [
-  { name: 'mailbox credential', path: '/api/settings', site: false, admin: false, needAuth: true },
-  { name: 'account credential', path: '/user_api/settings', site: false, admin: false, needAuth: true },
-  { name: 'site password', path: '/api/settings', site: true, admin: false, needAuth: true },
-  { name: 'site password on admin API', path: '/admin/db_version', site: true, admin: false, needAuth: true },
-  { name: 'admin password', path: '/admin/db_version', site: false, admin: true, needAuth: true },
-  { name: 'admin login', path: '/open_api/admin_login', site: false, admin: true, needAuth: false },
-  { name: 'site password after authentication', path: '/api/settings', site: true, admin: false, needAuth: false },
-  { name: 'site password on admin API after authentication', path: '/admin/db_version', site: true, admin: false, needAuth: false },
+  { name: 'mailbox credential', path: '/api/settings', site: false, needAuth: true },
+  { name: 'account credential', path: '/user_api/settings', site: false, needAuth: true },
+  { name: 'site password', path: '/api/settings', site: true, needAuth: true },
+  { name: 'site password on admin API', path: '/admin/db_version', site: true, needAuth: true },
+  { name: 'missing admin role', path: '/admin/db_version', site: false, needAuth: true },
+  { name: 'site password after authentication', path: '/api/settings', site: true, needAuth: false },
+  { name: 'site password on admin API after authentication', path: '/admin/db_version', site: true, needAuth: false },
 ]) {
   test(`Authentication dialog distinguishes ${scenario.name}`, async ({ page }) => {
     await openApiTestPage(page);
     await page.route(`**${scenario.path}`, route => route.fulfill(scenario.site
       ? { status: 401, json: { code: 'AUTH_SITE_PASSWORD_INVALID', message: 'Site password required' } }
-      : scenario.admin
-        ? { status: 401, json: { code: 'AUTH_ADMIN_CREDENTIAL_INVALID', message: 'Admin password required' } }
+      : scenario.name === 'missing admin role'
+        ? { status: 401, json: { code: 'AUTH_ADMIN_CREDENTIAL_INVALID', message: 'Admin role required' } }
         : { status: 401, body: 'Invalid credential' }));
     const result = await page.evaluate(async ({ path, needAuth }) => {
       const apiModule = '/src/api/index.js';
@@ -41,18 +42,17 @@ for (const scenario of [
       const state = (await import(storeModule)).useGlobalState();
       state.openSettings.value.needAuth = needAuth;
       state.showAuth.value = false;
-      state.showAdminAuth.value = false;
       try {
         await api.fetch(path);
       } catch {
-        return { site: state.showAuth.value, admin: state.showAdminAuth.value };
+        return { site: state.showAuth.value };
       }
     }, { path: scenario.path, needAuth: scenario.needAuth });
-    expect(result).toEqual({ site: scenario.site, admin: scenario.admin });
+    expect(result).toEqual({ site: scenario.site });
   });
 }
 
-for (const scenario of ['expired', 'expiring', 'valid', 'no account', 'login expired', 'wrong password', 'text zh', 'text en', 'retry expired', 'retry unauthorized', 'unmatched path', 'server error', 'json client error', 'json server error'] as const) {
+for (const scenario of ['expired', 'expiring', 'valid', 'no account', 'login expired', 'text zh', 'text en', 'retry expired', 'retry unauthorized', 'unmatched path', 'server error', 'json client error', 'json server error'] as const) {
   test(`Access token response handling: ${scenario}`, async ({ page }) => {
     await openApiTestPage(page);
 
@@ -81,15 +81,16 @@ for (const scenario of ['expired', 'expiring', 'valid', 'no account', 'login exp
         await route.fulfill({ status: 500, body: 'Server error' });
         return;
       }
-      if (!['valid', 'expiring', 'wrong password'].includes(scenario)
+      if (!['valid', 'expiring'].includes(scenario)
         && (attempts.length === 1 || scenario === 'retry expired')) {
         await route.fulfill(scenario.startsWith('text')
           ? { status: 401, body: scenario === 'text zh' ? '您的访问令牌已过期, 请刷新页面' : 'Your access token has expired, please refresh the page' }
           : expiredTokenResponse);
         return;
       }
-      await route.fulfill(['wrong password', 'retry unauthorized'].includes(scenario)
-        ? { status: 401, json: { code: 'AUTH_ADMIN_CREDENTIAL_INVALID', message: 'Admin password required' } }
+      // After a refresh the account may still lack the admin role; the error must surface as-is.
+      await route.fulfill(scenario === 'retry unauthorized'
+        ? { status: 401, json: { code: 'AUTH_ADMIN_CREDENTIAL_INVALID', message: 'Admin role required' } }
         : { json: { current_db_version: 'test-version' } });
     });
 
@@ -100,21 +101,18 @@ for (const scenario of ['expired', 'expiring', 'valid', 'no account', 'login exp
       const state = (await import(storeModule)).useGlobalState();
       state.userJwt.value = scenario === 'no account' ? '' : 'account-token';
       state.userSettings.value.access_token = initialToken;
-      state.adminAuth.value = scenario === 'wrong password' ? 'wrong-password' : '';
-      state.showAdminAuth.value = false;
       try {
-        return { data: await api.fetch(path), error: null, showAdminAuth: state.showAdminAuth.value };
+        return { data: await api.fetch(path), error: null };
       } catch (error) {
-        return { data: null, error: String(error), showAdminAuth: state.showAdminAuth.value };
+        return { data: null, error: String(error) };
       }
     }, { initialToken, scenario, path });
 
-    const needsRefresh = !['valid', 'expiring', 'no account', 'wrong password', 'text zh', 'text en', 'unmatched path', 'server error', 'json client error', 'json server error'].includes(scenario);
+    const needsRefresh = !['valid', 'expiring', 'no account', 'text zh', 'text en', 'unmatched path', 'server error', 'json client error', 'json server error'].includes(scenario);
     expect(refreshCount).toBe(needsRefresh ? 1 : 0);
     expect(attempts).toEqual(needsRefresh && scenario !== 'login expired' ? [initialToken, freshToken] : [initialToken]);
-    expect(result.showAdminAuth).toBe(['wrong password', 'retry unauthorized'].includes(scenario));
     if (scenario === 'login expired') expect(result.error).toContain('Please login again');
-    else if (['wrong password', 'retry unauthorized'].includes(scenario)) expect(result.error).toContain('Admin password required');
+    else if (scenario === 'retry unauthorized') expect(result.error).toContain('Admin role required');
     else if (['retry expired', 'no account', 'unmatched path'].includes(scenario)) expect(result.error).toContain('Access token expired');
     else if (scenario === 'server error') expect(result.error).toContain('Server error');
     else if (scenario.startsWith('text')) {
@@ -230,10 +228,8 @@ for (const failure of [400, 401, 500, 'network'] as const) {
       const state = (await import(storeModule)).useGlobalState();
       state.userJwt.value = 'account-token';
       state.userSettings.value.access_token = initialToken;
-      state.adminAuth.value = '';
       state.openSettings.value.needAuth = true;
       state.showAuth.value = false;
-      state.showAdminAuth.value = false;
       const results = await Promise.all(paths.map(async (path) => {
         try {
           return { data: await api.fetch(path, { method: path === '/api/send_mail' ? 'POST' : 'GET' }) };
@@ -241,7 +237,7 @@ for (const failure of [400, 401, 500, 'network'] as const) {
           return { error: String(error) };
         }
       }));
-      const flags = { showAuth: state.showAuth.value, showAdminAuth: state.showAdminAuth.value, loading: state.loading.value };
+      const flags = { showAuth: state.showAuth.value, loading: state.loading.value };
       await api.fetch('/admin/db_version');
       return { results, flags };
     }, { paths, initialToken: accessToken(-60) });
@@ -258,7 +254,7 @@ for (const failure of [400, 401, 500, 'network'] as const) {
     }
     expect(results[3].data).toEqual({ success: true });
     expect(results[4].error).toContain('[403]: No send balance');
-    expect(flags).toEqual({ showAuth: false, showAdminAuth: false, loading: false });
+    expect(flags).toEqual({ showAuth: false, loading: false });
     expect(refreshCount).toBe(2);
     expect(attempts.slice(0, 2).sort()).toEqual(['/api/send_mail', '/api/settings']);
     expect(attempts.slice(2)).toEqual(['/admin/db_version']);
@@ -296,7 +292,6 @@ for (const changedCredential of ['account', 'mailbox'] as const) {
       state.userJwt.value = 'account-token';
       state.jwt.value = 'mailbox-token';
       state.userSettings.value.access_token = initialToken;
-      state.adminAuth.value = '';
       try {
         await api.fetch(path, { method: path === '/api/send_mail' ? 'POST' : 'GET' });
         return null;
@@ -378,7 +373,6 @@ for (const [scenario, query] of [
         state.userJwt.value = userJwt;
         state.userSettings.value.access_token = expiredAccessToken;
         state.jwt.value = mailboxJwt;
-        state.adminAuth.value = '';
         return api.fetch(`/api/settings${query}`);
       }, { userJwt, expiredAccessToken, mailboxJwt: address.jwt, query });
       expect(settings.address).toBe(address.address);

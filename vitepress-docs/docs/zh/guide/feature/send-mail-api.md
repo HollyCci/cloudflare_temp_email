@@ -12,7 +12,7 @@
 
 ::: tip 什么是"地址 JWT"？
 地址 JWT 是通过 `/api/new_address` 或 `/admin/new_address` 创建邮箱地址时返回的 `jwt` 字段。
-你可以在前端 UI 的「密码」菜单中查看它。它**不是** `JWT_SECRET` 环境变量，也**不是** admin 密码。
+你可以在前端 UI 的「密码」菜单中查看它。它**不是** `JWT_SECRET` 环境变量，也**不是**用户 JWT 或管理员访问令牌。
 :::
 
 ### 方式一：通过 Header 认证（`/api/send_mail`）

@@ -56,8 +56,9 @@ export function CreateAddressForm({
   const subdomainPrefix = subdomain.trim().toLowerCase()
 
   const submit = async () => {
-    const localPart = name.trim() || randomLocalPart(12)
-    if (!selectedDomain) {
+    const customNameOff = openSettings.disableCustomAddressName
+    const localPart = customNameOff ? randomLocalPart(12) : name.trim()
+    if (!selectedDomain || !localPart) {
       toast(t('fillFields'), { variant: 'danger' })
       return false
     }
@@ -104,16 +105,18 @@ export function CreateAddressForm({
 
   return (
     <div className="flex flex-col gap-4">
-      <TextField
-        className="w-full"
-        name="addressName"
-        value={name}
-        onChange={setName}
-        variant="secondary"
-      >
-        <Label>{t('addressName')}</Label>
-        <Input placeholder="alice" />
-      </TextField>
+      {openSettings.disableCustomAddressName ? null : (
+        <TextField
+          className="w-full"
+          name="addressName"
+          value={name}
+          onChange={setName}
+          variant="secondary"
+        >
+          <Label>{t('addressName')}</Label>
+          <Input placeholder={t('pleaseInputName')} />
+        </TextField>
+      )}
       <Select
         className="w-full"
         placeholder={t('domain')}
@@ -170,12 +173,14 @@ export function CreateAddressForm({
       ) : null}
       {mode === 'user' ? <Turnstile value={cfToken} onChange={setCfToken} /> : null}
       <div className="flex flex-wrap gap-2">
-        <Button
-          variant="outline"
-          onPress={() => setName(randomLocalPart(10))}
-        >
-          {t('randomName')}
-        </Button>
+        {openSettings.disableCustomAddressName ? null : (
+          <Button
+            variant="outline"
+            onPress={() => setName(randomLocalPart(10))}
+          >
+            {t('randomName')}
+          </Button>
+        )}
         <ActionButton confirm onPress={submit}>
           {t('create')}
         </ActionButton>

@@ -1,14 +1,17 @@
 import { createHash } from 'crypto';
-import { expect, test, type APIRequestContext } from '@playwright/test';
+import type { APIRequestContext } from '@playwright/test';
+import { expect, test } from '../../fixtures/test';
 import {
+  ADMIN_HEADERS,
   createTestAddress,
   deleteAddress,
   FRONTEND_URL,
   FRONTEND_URL_ENV_OFF,
   WORKER_URL,
+  WORKER_URL_ENV_OFF,
+  loginAsBootstrapAdmin,
 } from '../../fixtures/test-helpers';
 
-const ADMIN_HEADERS = { 'x-admin-auth': 'e2e-admin-pass' };
 
 const uniqueValue = (label: string) => (
   `${label}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -212,11 +215,12 @@ test('the special-address page shows and retrieves the same full credentials', a
 test('Admin can batch-create, search, export, and display a redemption result', async ({ page, request }) => {
   let code = '';
   const user = await createUser(request);
+  const adminJwt = await loginAsBootstrapAdmin(request);
   try {
-    await page.addInitScript(() => {
-      localStorage.setItem('adminAuth', 'e2e-admin-pass');
+    await page.addInitScript((jwt) => {
+      localStorage.setItem('userJwt', jwt);
       sessionStorage.setItem('adminTab', 'redeemCodes');
-    });
+    }, adminJwt);
     await page.goto(`${FRONTEND_URL}/en/admin`);
     await expect(page.getByTestId('redeem-admin-create')).toBeVisible();
     await page.getByTestId('redeem-admin-create').click();
@@ -263,7 +267,7 @@ test('Admin can batch-create, search, export, and display a redemption result', 
   }
 });
 
-test('Admin ignores a stale list response after switching redemption type', async ({ page }) => {
+test('Admin ignores a stale list response after switching redemption type', async ({ page, request }) => {
   let releaseRole!: () => void;
   let markRoleRequested!: () => void;
   let markRoleCompleted!: () => void;
@@ -312,10 +316,10 @@ test('Admin ignores a stale list response after switching redemption type', asyn
       }),
     });
   });
-  await page.addInitScript(() => {
-    localStorage.setItem('adminAuth', 'e2e-admin-pass');
+  await page.addInitScript((jwt) => {
+    localStorage.setItem('userJwt', jwt);
     sessionStorage.setItem('adminTab', 'redeemCodes');
-  });
+  }, await loginAsBootstrapAdmin(request));
   await page.goto(`${FRONTEND_URL}/en/admin`);
   await roleRequested;
 
@@ -341,11 +345,11 @@ for (const { locale, roleRequired, roleType, addressType, create, generate, pref
     prefixError: '前缀仅支持英文字母和数字，最多 29 个字符；留空表示无前缀。',
   },
 ]) {
-  test(`Admin validates missing role and invalid prefix in ${locale}`, async ({ page }) => {
-    await page.addInitScript(() => {
-      localStorage.setItem('adminAuth', 'e2e-admin-pass');
+  test(`Admin validates missing role and invalid prefix in ${locale}`, async ({ page, request }) => {
+    await page.addInitScript((jwt) => {
+      localStorage.setItem('userJwt', jwt);
       sessionStorage.setItem('adminTab', 'redeemCodes');
-    });
+    }, await loginAsBootstrapAdmin(request));
     let createRequests = 0;
     page.on('request', (request) => {
       if (request.method() === 'POST'
@@ -370,7 +374,7 @@ for (const { locale, roleRequired, roleType, addressType, create, generate, pref
   });
 }
 
-test('the disabled frontend hides the entry and redirects the page', async ({ page }) => {
+test('the disabled frontend hides the entry and redirects the page', async ({ page, request }) => {
   await page.goto(`${FRONTEND_URL_ENV_OFF}/en/`);
   await expect(page.getByTestId('redeem-entry')).toHaveCount(0);
 
@@ -378,9 +382,9 @@ test('the disabled frontend hides the entry and redirects the page', async ({ pa
   await expect(page).not.toHaveURL(/\/redeem$/);
   await expect(page.getByTestId('redeem-entry')).toHaveCount(0);
 
-  await page.addInitScript(() => {
-    localStorage.setItem('adminAuth', 'e2e-admin-pass');
-  });
+  await page.addInitScript((jwt) => {
+    localStorage.setItem('userJwt', jwt);
+  }, await loginAsBootstrapAdmin(request, WORKER_URL_ENV_OFF));
   await page.goto(`${FRONTEND_URL_ENV_OFF}/en/admin`);
   await expect(page.getByTestId('redeem-admin-create')).toHaveCount(0);
   await expect(page.getByText('Redemption Codes', { exact: true })).toHaveCount(0);
