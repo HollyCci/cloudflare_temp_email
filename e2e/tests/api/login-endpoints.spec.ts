@@ -51,7 +51,7 @@ test.describe('Turnstile Login Endpoints (ENABLE_GLOBAL_TURNSTILE_CHECK disabled
     test('non-admin role token returns 401', async ({ request }) => {
       const res = await request.get(`${WORKER_URL}/admin/db_version`, {
         headers: {
-          'x-user-access-token': signAccessToken({ user_role: 'case-role', exp: Math.floor(Date.now() / 1000) + 3600 }),
+          'x-user-access-token': signAccessToken({ user_id: 1, user_role: 'case-role', exp: Math.floor(Date.now() / 1000) + 3600 }),
         },
       });
       expect(res.status()).toBe(401);

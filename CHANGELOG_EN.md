@@ -11,7 +11,7 @@
 ### Features
 
 - refactor: |Auth| **Behaviour change**: token parsing is unified in `worker/src/user_auth.ts`, giving the user token and the access token one parser each with five outcomes (absent / invalid / no expiry / expired / ok). An `x-user-access-token` that is presented but unusable — wrong signature, expired, or issued to another account — now returns 401 `AUTH_USER_ACCESS_TOKEN_EXPIRED` instead of being silently ignored and downgraded to no role
-- refactor: |Auth| The role has a single source: `getAllowDomains` / `getAddressPrefix` now read the access token the middleware already verified instead of querying the database again. Allowed domains, address prefix, address quota and send balance always agree on the caller's role, and a role change takes effect through the 1-hour access token
+- refactor: |Auth| The role has a single resolver, `getRequestUserRole`: when the request established an identity the role is that account's live row, and when there is no identity to key on (`/admin/*`, where the console presents the access token alone) it is the token's role claim — identity outranks the bearer claim, because the token only caches the role for up to an hour. Allowed domains, address prefix, address quota and send balance all read this one resolver instead of each reaching for its own source
 - refactor: |Auth| `ADMIN_API_IP_WHITELIST` no longer wraps its check in a try/catch that let requests through on failure; it now refuses them. Remove `hasAdminAccessToken` and three duplicated copies of the token verification code
 - refactor: |e2e| Add the `accountHeaders()` fixture so account-authenticated requests stop carrying the project-wide admin token, which belongs to no account and only worked because the worker silently ignored it
 - feat: |Auth| **Breaking**: the Admin Console now uses role-based access control (RBAC). Remove `ADMIN_PASSWORDS`, `DISABLE_ADMIN_PASSWORD_CHECK`, the `x-admin-auth` header and the `/open_api/admin_login` endpoint; `/admin/*` only accepts an `x-user-access-token` whose role equals `ADMIN_USER_ROLE` (default `admin`). Admin mail access from the Telegram mini app checks the admin token as well
@@ -30,6 +30,7 @@
 
 ### Bug Fixes
 
+- fix: |e2e| Fix the e2e build: `Dockerfile.frontend` copied only `package.json`/`pnpm-lock.yaml` before installing, while `postinstall` runs `scripts/setup-heroui-pro.mjs`, which is not in the image yet — e2e has been unbuildable since the React rewrite. The frontend containers move behind a `browser` profile (their image needs the HeroUI Pro licence key `HEROUI_SETUP_KEY`), the default run is `--project=api`, and the entrypoint's frontend wait is now guarded like every other optional service
 - fix: |Auth| The per-role address quota (`ROLE_ADDRESS_CONFIG`) never applied on `/api/new_address`: that path's middleware did not parse the access token, so the role was always empty and the quota was only enforced when binding an address
 - fix: |Frontend| An access token the worker rejects is dropped from the session immediately, and the refresh request itself no longer presents it; the interceptor keeps no route allowlist and follows the worker's error code instead
 - fix: |Mail| Rewrite `cid:` inline images to data URLs and keep data images in mail HTML; send no-referrer on remote images so logos render

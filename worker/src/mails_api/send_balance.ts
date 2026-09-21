@@ -2,6 +2,7 @@ import { Context } from 'hono'
 
 import { CONSTANTS } from '../constants'
 import { getJsonSetting, getIntValue, getSplitStringListValue } from '../utils'
+import { getRequestUserRole } from '../common'
 
 export const ensureDefaultSendBalance = async (
     c: Context<HonoCustomType>,
@@ -44,7 +45,7 @@ export const getSendBalanceState = async (
     needCheckBalance: boolean,
     balance: number | null
 }> => {
-    const user_role = c.get("userRolePayload");
+    const user_role = (await getRequestUserRole(c))?.role;
     const no_limit_roles = getSplitStringListValue(c.env.NO_LIMIT_SEND_ROLE);
     const is_no_limit_send_balance = typeof user_role === "string"
         && no_limit_roles.includes(user_role);

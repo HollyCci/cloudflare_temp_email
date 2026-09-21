@@ -25,7 +25,8 @@ export function signAccessToken(payload: Record<string, unknown>, secret: string
 
 /**
  * `x-user-access-token` value carrying the admin role.
- * Admin APIs are role-based: this token is what grants `/admin/*` access in tests.
+ * Admin APIs are role-based: this token is what grants `/admin/*` access in tests. It carries no
+ * `user_id` on purpose — it stands for a role, not an account, which is what `/admin/*` checks.
  */
 export function adminAccessToken(secret: string = E2E_JWT_SECRET, expiresInSeconds = 24 * 3600): string {
   return signAccessToken({
@@ -49,5 +50,14 @@ export function adminHeaders(secret: string = E2E_JWT_SECRET): Record<string, st
  * caller rather than silently dropping the role, so it must not ride along on account calls.
  */
 export function accountHeaders(userJwt: string): Record<string, string> {
-  return { 'x-user-token': userJwt, 'x-user-access-token': '' };
+  return { 'x-user-token': userJwt, ...NO_ADMIN_TOKEN };
 }
+
+/**
+ * Clears the project-level admin token for requests that are not admin calls.
+ *
+ * `playwright.config.ts` attaches `ADMIN_HEADERS` to every request in the api project, but that
+ * token is signed with the default worker's secret. Sent to another worker variant it cannot
+ * verify, and the worker refuses an access token it cannot use rather than ignoring it.
+ */
+export const NO_ADMIN_TOKEN = { 'x-user-access-token': '' } as const;

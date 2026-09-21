@@ -402,7 +402,7 @@ export const newAddress = async (
         name = trimLower(c.env.PREFIX) + name;
     }
     // check domain
-    const allowDomains = checkAllowDomains ? getAllowDomains(c) : getDomains(c);
+    const allowDomains = checkAllowDomains ? await getAllowDomains(c) : getDomains(c);
     // if domain is not set, select domain based on environment configuration
     if (!domain && allowDomains.length > 0) {
         const createAddressDefaultDomainFirst = getBooleanValue(c.env.CREATE_ADDRESS_DEFAULT_DOMAIN_FIRST);
@@ -834,25 +834,35 @@ export const ensureBootstrapAdminRole = async (
 }
 
 /**
- * The caller's role configuration, taken from the access token the auth middleware already
- * verified. Every role-dependent limit reads this one value, so the allowed domains, the
- * address prefix, the address quota and the send balance can never disagree about the caller.
+ * The caller's role. Every role-dependent limit reads this one function, so the allowed domains,
+ * the address prefix, the address quota and the send balance can never disagree about the caller.
+ *
+ * Identity outranks the bearer claim: when the route authenticated an account, the role is the
+ * live row for that account; the access token only caches it for up to an hour, and a client
+ * holding just an account token has no cached copy at all. The claim is used when there is no
+ * identity to key on — `/admin/*`, where the console presents the access token by itself.
+ *
+ * The two can never describe different people: the middleware refuses an access token whose
+ * `user_id` is not the authenticated account's.
  *
  * Use `commonGetUserRole` instead when the subject is someone other than the caller.
  */
-export const getRequestUserRole = (c: Context<HonoCustomType>): UserRole | null => {
+export const getRequestUserRole = async (
+    c: Context<HonoCustomType>
+): Promise<UserRole | null> => {
+    const user = c.get("userPayload");
+    if (user) return await commonGetUserRole(c, user.user_id) || null;
     const role = c.get("userRolePayload");
-    if (!role) return null;
-    return getUserRoles(c).find((item) => item.role === role) || null;
+    return role ? getUserRoles(c).find((item) => item.role === role) || null : null;
 }
 
-export const getAddressPrefix = (c: Context<HonoCustomType>): string => {
-    const prefix = getRequestUserRole(c)?.prefix;
+export const getAddressPrefix = async (c: Context<HonoCustomType>): Promise<string> => {
+    const prefix = (await getRequestUserRole(c))?.prefix;
     return trimLower(typeof prefix === "string" ? prefix : c.env.PREFIX);
 }
 
-export const getAllowDomains = (c: Context<HonoCustomType>): string[] => {
-    const domains = getRequestUserRole(c)?.domains;
+export const getAllowDomains = async (c: Context<HonoCustomType>): Promise<string[]> => {
+    const domains = (await getRequestUserRole(c))?.domains;
     return domains && domains.length > 0 ? normalizeDomains(domains) : getDefaultDomains(c);
 }
 

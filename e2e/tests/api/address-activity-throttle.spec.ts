@@ -1,6 +1,7 @@
 import { test, expect, type APIRequestContext } from '@playwright/test';
 import {
   accountHeaders,
+  NO_ADMIN_TOKEN,
   WORKER_URL,
   WORKER_URL_ENV_OFF,
   adminHeadersFor,
@@ -100,7 +101,8 @@ for (const { base, disabled } of [
     async function call(request: APIRequestContext, path: string,
       options: Parameters<APIRequestContext['fetch']>[1] = {}, status = 200) {
       const response = await request.fetch(`${base}${path}`, path.startsWith('/admin/')
-        ? { ...options, headers: { ...adminHeadersFor(base), ...options.headers } } : options);
+        ? { ...options, headers: { ...adminHeadersFor(base), ...options.headers } }
+        : { ...options, headers: { ...NO_ADMIN_TOKEN, ...options.headers } });
       expect(response.status(), await response.text()).toBe(status);
       return response;
     }
