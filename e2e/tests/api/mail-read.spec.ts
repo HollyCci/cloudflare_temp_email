@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import {
+  NO_ADMIN_TOKEN,
   WORKER_URL,
   WORKER_URL_ENV_OFF,
   createTestAddress,
@@ -8,7 +9,7 @@ import {
   seedTestMail,
 } from '../../fixtures/test-helpers';
 
-const headers = (jwt: string) => ({ Authorization: `Bearer ${jwt}` });
+const headers = (jwt: string) => ({ Authorization: `Bearer ${jwt}`, ...NO_ADMIN_TOKEN });
 
 test.describe('Mail read status', () => {
   test('keeps historical mail read and switches one new mail state', async ({ request }) => {
