@@ -13,6 +13,12 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Run E2E tests
+        env:
+          HEROUI_SETUP_KEY: ${{ secrets.HEROUI_SETUP_KEY }}
+          COMPOSE_PROFILES: ${{ secrets.HEROUI_SETUP_KEY && 'browser' || '' }}
+          E2E_PROJECTS: ${{ secrets.HEROUI_SETUP_KEY && '--project=api --project=browser' || '--project=api' }}
+          E2E_FRONTEND_URL: ${{ secrets.HEROUI_SETUP_KEY && 'https://frontend:5173' || '' }}
+          E2E_FRONTEND_URL_ENV_OFF: ${{ secrets.HEROUI_SETUP_KEY && 'https://frontend-env-off:5174' || '' }}
         run: |
           cd e2e
           docker compose up --build --abort-on-container-exit --exit-code-from e2e-runner
