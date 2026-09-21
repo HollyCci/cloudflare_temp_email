@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { WORKER_URL, createTestAddress, deleteAddress, hashPassword } from '../../fixtures/test-helpers';
+import { accountHeaders, WORKER_URL, createTestAddress, deleteAddress, hashPassword } from '../../fixtures/test-helpers';
 
 test.describe('Address Password Login', () => {
   test('set password then login with it', async ({ request }) => {
@@ -147,13 +147,13 @@ test.describe('Address Password Login', () => {
       const bindRes = await request.post(`${WORKER_URL}/user_api/bind_address`, {
         headers: {
           Authorization: `Bearer ${jwt}`,
-          'x-user-token': userJwt,
+          ...accountHeaders(userJwt),
         },
       });
       expect(bindRes.ok()).toBe(true);
 
       const listRes = await request.get(`${WORKER_URL}/user_api/bind_address`, {
-        headers: { 'x-user-token': userJwt },
+        headers: accountHeaders(userJwt),
       });
       expect(listRes.ok()).toBe(true);
       const listBody = await listRes.json();

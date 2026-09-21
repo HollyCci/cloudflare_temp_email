@@ -150,6 +150,7 @@
 >
 > - 如果 `domains` 为空将使用 `DEFAULT_DOMAINS`；如果 `DEFAULT_DOMAINS` 也为空，则继续回退到 `DOMAINS`
 > - 如果 prefix 为 null 将使用默认前缀, 如果 prefix 为空字符串将不使用前缀
+> - 角色来自用户的访问令牌（有效期 1 小时）。在后台修改某个用户的角色后，该用户的可用域名、地址前缀、地址数量上限与发信额度会在其访问令牌刷新后生效，最长 1 小时；用户刷新页面可立即生效
 >
 > 通过用户界面部署时 `USER_ROLES` 请配置为此格式 `[{"domains":["awsl.uk","dreamhunter2333.xyz"],"role":"vip","prefix":"vip"},{"domains":["awsl.uk","dreamhunter2333.xyz"],"role":"admin","prefix":""}]`
 >

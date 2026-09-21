@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { test, expect } from '@playwright/test';
-import { ADMIN_HEADERS_ENV_OFF, WORKER_URL, WORKER_URL_ENV_OFF, createTestAddress, seedTestMail, deleteAddress } from '../../fixtures/test-helpers';
+import { accountHeaders, ADMIN_HEADERS_ENV_OFF, WORKER_URL, WORKER_URL_ENV_OFF, createTestAddress, seedTestMail, deleteAddress } from '../../fixtures/test-helpers';
 
 test.describe('Mail Deletion', () => {
   test('user mail deletion is disabled when ENABLE_USER_DELETE_EMAIL is false', async ({ request }) => {
@@ -44,7 +44,7 @@ test.describe('Mail Deletion', () => {
       const bindRes = await request.post(`${WORKER_URL_ENV_OFF}/user_api/bind_address`, {
         headers: {
           Authorization: `Bearer ${jwt}`,
-          'x-user-token': userJwt,
+          ...accountHeaders(userJwt),
         },
       });
       expect(bindRes.ok()).toBe(true);
@@ -79,7 +79,7 @@ test.describe('Mail Deletion', () => {
       expect(seedBody.success).toBe(true);
 
       const listRes = await request.get(`${WORKER_URL_ENV_OFF}/user_api/mails?limit=10&offset=0`, {
-        headers: { 'x-user-token': userJwt },
+        headers: accountHeaders(userJwt),
       });
       expect(listRes.ok()).toBe(true);
       const { results } = await listRes.json();
@@ -87,12 +87,12 @@ test.describe('Mail Deletion', () => {
 
       const targetId = results[0].id;
       const delRes = await request.delete(`${WORKER_URL_ENV_OFF}/user_api/mails/${targetId}`, {
-        headers: { 'x-user-token': userJwt },
+        headers: accountHeaders(userJwt),
       });
       expect(delRes.status()).toBe(403);
 
       const afterRes = await request.get(`${WORKER_URL_ENV_OFF}/user_api/mails?limit=10&offset=0`, {
-        headers: { 'x-user-token': userJwt },
+        headers: accountHeaders(userJwt),
       });
       expect(afterRes.ok()).toBe(true);
       const after = await afterRes.json();

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import type { APIRequestContext } from '@playwright/test';
-import { WORKER_URL } from '../../fixtures/test-helpers';
+import { accountHeaders, WORKER_URL } from '../../fixtures/test-helpers';
 
 const TEST_USER_EMAIL = `passkey-e2e-${Date.now()}@test.example.com`;
 const TEST_USER_PASSWORD = 'test-password-123';
@@ -43,7 +43,7 @@ test.describe('Passkey API', () => {
 
   test('register_request returns valid WebAuthn options', async ({ request }) => {
     const res = await request.post(`${WORKER_URL}/user_api/passkey/register_request`, {
-      headers: { 'x-user-token': userJwt },
+      headers: accountHeaders(userJwt),
       data: { domain: 'localhost' },
     });
     expect(res.ok()).toBe(true);
@@ -86,7 +86,7 @@ test.describe('Passkey API', () => {
 
   test('passkey list is empty for new user', async ({ request }) => {
     const res = await request.get(`${WORKER_URL}/user_api/passkey`, {
-      headers: { 'x-user-token': userJwt },
+      headers: accountHeaders(userJwt),
     });
     expect(res.ok()).toBe(true);
     const passkeys = await res.json();
@@ -96,7 +96,7 @@ test.describe('Passkey API', () => {
 
   test('passkey list remains empty without registration', async ({ request }) => {
     const listRes = await request.get(`${WORKER_URL}/user_api/passkey`, {
-      headers: { 'x-user-token': userJwt },
+      headers: accountHeaders(userJwt),
     });
     expect(listRes.ok()).toBe(true);
     const passkeys = await listRes.json();
@@ -106,7 +106,7 @@ test.describe('Passkey API', () => {
 
   test('register_response with invalid credential returns 400', async ({ request }) => {
     const res = await request.post(`${WORKER_URL}/user_api/passkey/register_response`, {
-      headers: { 'x-user-token': userJwt },
+      headers: accountHeaders(userJwt),
       data: {
         credential: {
           id: 'fake-id',
@@ -128,7 +128,7 @@ test.describe('Passkey API', () => {
 
   test('rename nonexistent passkey succeeds silently', async ({ request }) => {
     const res = await request.post(`${WORKER_URL}/user_api/passkey/rename`, {
-      headers: { 'x-user-token': userJwt },
+      headers: accountHeaders(userJwt),
       data: {
         passkey_id: 'nonexistent-id',
         passkey_name: 'new-name',
@@ -142,7 +142,7 @@ test.describe('Passkey API', () => {
 
   test('rename with invalid name returns 400', async ({ request }) => {
     const res = await request.post(`${WORKER_URL}/user_api/passkey/rename`, {
-      headers: { 'x-user-token': userJwt },
+      headers: accountHeaders(userJwt),
       data: {
         passkey_id: 'any-id',
         passkey_name: 'x'.repeat(256),
@@ -153,7 +153,7 @@ test.describe('Passkey API', () => {
 
   test('delete nonexistent passkey succeeds silently', async ({ request }) => {
     const res = await request.delete(`${WORKER_URL}/user_api/passkey/nonexistent-id`, {
-      headers: { 'x-user-token': userJwt },
+      headers: accountHeaders(userJwt),
     });
     expect(res.ok()).toBe(true);
     const body = await res.json();

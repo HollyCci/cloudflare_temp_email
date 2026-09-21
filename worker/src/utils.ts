@@ -1,5 +1,4 @@
 import { Context } from "hono";
-import { Jwt } from "hono/utils/jwt";
 import { UserSettings, RoleAddressConfig } from "./models";
 import { CONSTANTS } from "./constants";
 
@@ -269,23 +268,6 @@ export const isAdminUserEmail = (c: Context<HonoCustomType>, email: string | und
     return getAdminUserEmails(c).includes(trimLower(email));
 }
 
-/**
- * True when the request carries a valid, unexpired `x-user-access-token` whose role is the admin role.
- * Used outside `/admin/*` where the middleware does not run (e.g. Telegram mini app).
- */
-export const hasAdminAccessToken = async (c: Context<HonoCustomType>): Promise<boolean> => {
-    const token = c.req.raw.headers.get("x-user-access-token");
-    if (!token) return false;
-    try {
-        const payload = await Jwt.verify(token, c.env.JWT_SECRET, { alg: "HS256", exp: false });
-        if (!payload.exp || payload.exp < Math.floor(Date.now() / 1000)) return false;
-        return payload.user_role === getAdminRole(c);
-    } catch (e) {
-        console.error(e);
-        return false;
-    }
-}
-
 const parseConfiguredRoles = (c: Context<HonoCustomType>): UserRole[] => {
     if (!c.env.USER_ROLES) {
         return [];
@@ -426,11 +408,11 @@ export const getMaxAddressCount = async (
 ): Promise<number> => {
     if (!userRole) return settings.maxAddressCount;
     const roleConfigs = await getJsonSetting<RoleAddressConfig>(c, CONSTANTS.ROLE_ADDRESS_CONFIG_KEY);
-    if (!roleConfigs) return settings.maxAddressCount;
-    const roleMaxCount = roleConfigs[userRole]?.maxAddressCount;
-    if (typeof roleMaxCount !== 'number') return settings.maxAddressCount;
-    if (roleMaxCount < 0) return settings.maxAddressCount;
-    return roleMaxCount;
+    const roleMaxCount = roleConfigs?.[userRole]?.maxAddressCount;
+    // a role without its own quota, or with a negative one, inherits the site-wide limit
+    return typeof roleMaxCount === 'number' && roleMaxCount >= 0
+        ? roleMaxCount
+        : settings.maxAddressCount;
 };
 
 /**
@@ -481,7 +463,6 @@ export default {
     getAdminRole,
     getAdminUserEmails,
     isAdminUserEmail,
-    hasAdminAccessToken,
     getAnotherWorkerList,
     getPasswords,
     getEnvStringList,

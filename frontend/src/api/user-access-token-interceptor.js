@@ -3,33 +3,35 @@ import { ErrorCode } from './error-codes'
 import { session } from '../store/session'
 import { safeBearerHeader, safeHeaderValue } from '../utils/headers'
 
-const mailboxPaths = new Set(['/api/settings', '/api/send_mail'])
-const paths = ['/admin/', ...mailboxPaths, '/user_api/bind_address', '/user_api/address/']
-const getPathname = (url) => new URL(url, window.location.origin).pathname
-
 const isCurrentSession = ({ headers }) =>
   safeHeaderValue(headers.get('x-user-token')) === safeHeaderValue(session.userJwt)
   && safeHeaderValue(headers.get('Authorization')) === safeBearerHeader(session.jwt)
 
+/**
+ * The worker answers AUTH_USER_ACCESS_TOKEN_EXPIRED for every access token it cannot use —
+ * expired, forged, or issued to a different account — because they all have the same cure.
+ * The error code is therefore the whole signal: which route raised it is the worker's business,
+ * so this interceptor keeps no list of routes that may raise it.
+ */
 const matches = (path, response) => {
   if (!ErrorCode.isUserAccessTokenError(response)) return false
-  const pathname = getPathname(path)
-  if (!paths.some((prefix) => pathname.startsWith(prefix))) return false
   const { config } = response
   if (!isCurrentSession(config)) return false
-  if (!safeHeaderValue(config.headers.get('x-user-access-token'))) return false
-  const token = safeHeaderValue(config.headers.get('x-user-token'))
-  return Boolean(token) || mailboxPaths.has(pathname)
+  return Boolean(safeHeaderValue(config.headers.get('x-user-access-token')))
 }
 
 async function loadUserSettings(token, client, headers) {
-  const response = await client.get('/user_api/settings', { headers })
+  // the rejected token is not presented while asking for its replacement
+  const refreshHeaders = new AxiosHeaders(headers)
+  refreshHeaders.delete('x-user-access-token')
+  const response = await client.get('/user_api/settings', { headers: refreshHeaders })
   if (response.status >= 300) {
     throw new Error(`[${response.status}]: ${response.data?.message || response.data}`)
   }
   if (safeHeaderValue(session.userJwt) === token) {
     session.setUserSettings(response.data)
   }
+  return response.data
 }
 
 export const createUserAccessTokenInterceptor = (client) => {
@@ -40,24 +42,29 @@ export const createUserAccessTokenInterceptor = (client) => {
     const request = loadUserSettings(token, client, headers)
     pendingRefreshes.set(token, request)
     try {
-      await request
+      return await request
     } finally {
       pendingRefreshes.delete(token)
     }
   }
 
+  /**
+   * Decide which access token the retry should carry. The rejected one is dropped from the
+   * session so later requests stop presenting it; an account then gets a freshly issued token,
+   * while an address-only session has no account to issue one and simply carries no role.
+   */
   async function resolveAccessToken(config) {
-    const token = safeHeaderValue(config.headers.get('x-user-token'))
-    if (!token) return
-    const currentToken = safeHeaderValue(session.userSettings.access_token)
-    if (currentToken !== safeHeaderValue(config.headers.get('x-user-access-token'))) return currentToken
-    try {
-      await refreshUserSettings(token, config.headers)
-    } catch (error) {
-      if (!mailboxPaths.has(getPathname(config.url))) throw error
-      return
-    }
-    return safeHeaderValue(session.userSettings.access_token)
+    const rejected = safeHeaderValue(config.headers.get('x-user-access-token'))
+    const current = safeHeaderValue(session.userSettings.access_token)
+    // a concurrent request already replaced it — retry with what the session holds now
+    if (current !== rejected) return current
+
+    session.setUserSettings({ access_token: null })
+
+    const userToken = safeHeaderValue(config.headers.get('x-user-token'))
+    if (!userToken) return null
+    const settings = await refreshUserSettings(userToken, config.headers)
+    return safeHeaderValue(settings?.access_token)
   }
 
   return {

@@ -155,6 +155,7 @@ When `ADMIN_API_IP_WHITELIST` is unset or empty, source IPs are not restricted. 
 >
 > - If `domains` is empty, `DEFAULT_DOMAINS` will be used; if `DEFAULT_DOMAINS` is also empty, it falls back to `DOMAINS`
 > - If prefix is null, the default prefix will be used, if prefix is an empty string, no prefix will be used
+> - The role is read from the user's access token, which lives 1 hour. After you change a user's role in the Admin Console, their allowed domains, address prefix, address quota and send balance follow once that token is refreshed — within an hour, or immediately if the user reloads the page
 >
 > When deploying through UI, configure `USER_ROLES` in this format: `[{"domains":["awsl.uk","dreamhunter2333.xyz"],"role":"vip","prefix":"vip"},{"domains":["awsl.uk","dreamhunter2333.xyz"],"role":"admin","prefix":""}]`
 >

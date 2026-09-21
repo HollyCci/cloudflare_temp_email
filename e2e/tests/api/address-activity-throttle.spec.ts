@@ -1,5 +1,6 @@
 import { test, expect, type APIRequestContext } from '@playwright/test';
 import {
+  accountHeaders,
   WORKER_URL,
   WORKER_URL_ENV_OFF,
   adminHeadersFor,
@@ -40,13 +41,13 @@ test.describe('Address activity throttling', () => {
       const bindRes = await request.post(`${WORKER_URL}/user_api/bind_address`, {
         headers: {
           Authorization: `Bearer ${address.jwt}`,
-          'x-user-token': userJwt,
+          ...accountHeaders(userJwt),
         },
       });
       expect(bindRes.ok()).toBe(true);
 
       const beforeRes = await request.get(`${WORKER_URL}/user_api/bind_address`, {
-        headers: { 'x-user-token': userJwt },
+        headers: accountHeaders(userJwt),
       });
       expect(beforeRes.ok()).toBe(true);
       const before = await beforeRes.json();
@@ -57,13 +58,13 @@ test.describe('Address activity throttling', () => {
 
       await waitForNextTimestamp();
       const userSettingsRes = await request.get(`${WORKER_URL}/user_api/settings`, {
-        headers: { 'x-user-token': userJwt },
+        headers: accountHeaders(userJwt),
       });
       expect(userSettingsRes.ok()).toBe(true);
       await waitForNextTimestamp();
 
       const afterRes = await request.get(`${WORKER_URL}/user_api/bind_address`, {
-        headers: { 'x-user-token': userJwt },
+        headers: accountHeaders(userJwt),
       });
       expect(afterRes.ok()).toBe(true);
       const after = await afterRes.json();
@@ -130,7 +131,7 @@ for (const { base, disabled } of [
       return user;
     }
     const addressAuth = (mailbox: Mailbox) => ({ Authorization: `Bearer ${mailbox.jwt}` });
-    const userAuth = (user: User) => ({ 'x-user-token': user.jwt });
+    const userAuth = (user: User) => accountHeaders(user.jwt);
     async function bind(request: APIRequestContext, mailbox: Mailbox, user: User) {
       await call(request, '/admin/users/bind_address', {
         method: 'POST', data: { user_id: user.id, address_id: mailbox.address_id },

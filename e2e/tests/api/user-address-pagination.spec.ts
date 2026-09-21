@@ -1,5 +1,6 @@
 import { test, expect, type APIRequestContext } from '@playwright/test';
 import {
+  accountHeaders,
   WORKER_URL,
   createTestAddress,
   deleteAddress,
@@ -60,14 +61,14 @@ test.describe('User address pagination', () => {
         const bindRes = await request.post(`${WORKER_URL}/user_api/bind_address`, {
           headers: {
             Authorization: `Bearer ${item.jwt}`,
-            'x-user-token': userJwt,
+            ...accountHeaders(userJwt),
           },
         });
         expect(bindRes.ok()).toBe(true);
       }
 
       const defaultPageRes = await request.get(`${WORKER_URL}/user_api/bind_address`, {
-        headers: { 'x-user-token': userJwt },
+        headers: accountHeaders(userJwt),
       });
       expect(defaultPageRes.ok()).toBe(true);
       const defaultPage = await defaultPageRes.json();
@@ -76,7 +77,7 @@ test.describe('User address pagination', () => {
 
       const firstPageRes = await request.get(
         `${WORKER_URL}/user_api/bind_address?limit=2&offset=0`,
-        { headers: { 'x-user-token': userJwt } },
+        { headers: accountHeaders(userJwt) },
       );
       expect(firstPageRes.ok()).toBe(true);
       const firstPage = await firstPageRes.json();
@@ -89,7 +90,7 @@ test.describe('User address pagination', () => {
 
       const secondPageRes = await request.get(
         `${WORKER_URL}/user_api/bind_address?limit=2&offset=2`,
-        { headers: { 'x-user-token': userJwt } },
+        { headers: accountHeaders(userJwt) },
       );
       expect(secondPageRes.ok()).toBe(true);
       const secondPage = await secondPageRes.json();
@@ -98,13 +99,13 @@ test.describe('User address pagination', () => {
 
       const invalidLimitRes = await request.get(
         `${WORKER_URL}/user_api/bind_address?limit=101&offset=0`,
-        { headers: { 'x-user-token': userJwt } },
+        { headers: accountHeaders(userJwt) },
       );
       expect(invalidLimitRes.status()).toBe(400);
 
       const invalidOffsetRes = await request.get(
         `${WORKER_URL}/user_api/bind_address?limit=20&offset=-1`,
-        { headers: { 'x-user-token': userJwt } },
+        { headers: accountHeaders(userJwt) },
       );
       expect(invalidOffsetRes.status()).toBe(400);
 
@@ -112,7 +113,7 @@ test.describe('User address pagination', () => {
       await seedTestMail(request, outsider.address, { subject: 'Outsider mail' });
 
       const userMailsRes = await request.get(`${WORKER_URL}/user_api/mails?limit=20&offset=0`, {
-        headers: { 'x-user-token': userJwt },
+        headers: accountHeaders(userJwt),
       });
       expect(userMailsRes.ok()).toBe(true);
       const userMails = await userMailsRes.json();
@@ -121,7 +122,7 @@ test.describe('User address pagination', () => {
 
       const filteredOutsiderMailsRes = await request.get(
         `${WORKER_URL}/user_api/mails?limit=20&offset=0&address=${encodeURIComponent(outsider.address)}`,
-        { headers: { 'x-user-token': userJwt } },
+        { headers: accountHeaders(userJwt) },
       );
       expect(filteredOutsiderMailsRes.ok()).toBe(true);
       const filteredOutsiderMails = await filteredOutsiderMailsRes.json();
@@ -137,7 +138,7 @@ test.describe('User address pagination', () => {
 
       const forbiddenDeleteRes = await request.delete(
         `${WORKER_URL}/user_api/mails/${outsiderMails.results[0].id}`,
-        { headers: { 'x-user-token': userJwt } },
+        { headers: accountHeaders(userJwt) },
       );
       expect(forbiddenDeleteRes.ok()).toBe(true);
 

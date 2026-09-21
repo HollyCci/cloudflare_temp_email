@@ -2,7 +2,8 @@ import { Context } from "hono";
 import { verifyAddressToken } from '../address_auth';
 import { CONSTANTS } from "../constants";
 import { bindTelegramAddress, jwtListToAddressData, tgUserNewAddress, unbindTelegramAddress } from "./common";
-import { checkCfTurnstile, hasAdminAccessToken, getBooleanValue } from "../utils";
+import { checkCfTurnstile, getBooleanValue, getAdminRole } from "../utils";
+import { readAccessToken, staleAccessTokenResponse } from "../user_auth";
 import { resolveRawEmailRow } from "../gzip";
 import { TelegramSettings } from "./settings";
 import i18n from "../i18n";
@@ -138,7 +139,13 @@ async function getMail(c: Context<HonoCustomType>): Promise<Response> {
     const { initData, mailId } = await c.req.json();
     const msgs = i18n.getMessagesbyContext(c);
     try {
-        if (await hasAdminAccessToken(c)) {
+        // an admin reads any mail; a broken access token is refused here rather than quietly
+        // demoted to the telegram-bound path below
+        const credential = await readAccessToken(c);
+        if (credential.state !== 'absent' && credential.state !== 'ok') {
+            return staleAccessTokenResponse(c);
+        }
+        if (credential.state === 'ok' && credential.payload.user_role === getAdminRole(c)) {
             const result = await c.env.DB.prepare(
                 `SELECT * FROM raw_mails where id = ?`
             ).bind(mailId).first();

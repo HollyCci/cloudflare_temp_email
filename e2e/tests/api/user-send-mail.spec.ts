@@ -1,6 +1,7 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
 
 import {
+  accountHeaders,
   WORKER_URL,
   createTestAddress,
   deleteAddress,
@@ -36,7 +37,7 @@ async function bindAddress(
   const response = await request.post(`${WORKER_URL}/user_api/bind_address`, {
     headers: {
       Authorization: `Bearer ${addressJwt}`,
-      'x-user-token': userJwt,
+      ...accountHeaders(userJwt),
     },
   });
   expect(response.ok()).toBe(true);
@@ -73,32 +74,32 @@ test.describe('User send mail API', () => {
 
       const invalidAddressSettingsRes = await request.get(
         `${WORKER_URL}/user_api/address/0/settings`,
-        { headers: { 'x-user-token': user.jwt } },
+        { headers: accountHeaders(user.jwt) },
       );
       expect(invalidAddressSettingsRes.status()).toBe(400);
 
       const outsiderSettingsRes = await request.get(
         `${WORKER_URL}/user_api/address/${outsider.address_id}/settings`,
-        { headers: { 'x-user-token': user.jwt } },
+        { headers: accountHeaders(user.jwt) },
       );
       expect(outsiderSettingsRes.status()).toBe(400);
 
       const outsiderCredentialRes = await request.get(
         `${WORKER_URL}/user_api/bind_address_jwt/${outsider.address_id}`,
-        { headers: { 'x-user-token': user.jwt } },
+        { headers: accountHeaders(user.jwt) },
       );
       expect(outsiderCredentialRes.status()).toBe(400);
 
       const outsiderAccessRes = await request.post(
         `${WORKER_URL}/user_api/address/${outsider.address_id}/request_send_mail_access`,
-        { headers: { 'x-user-token': user.jwt } },
+        { headers: accountHeaders(user.jwt) },
       );
       expect(outsiderAccessRes.status()).toBe(400);
 
       const outsiderUserSendRes = await request.post(
         `${WORKER_URL}/user_api/address/${outsider.address_id}/send_mail`,
         {
-          headers: { 'x-user-token': user.jwt },
+          headers: accountHeaders(user.jwt),
           data: {
             to_mail: 'recipient@test.example.com',
             subject: 'Forbidden user send',
@@ -116,7 +117,7 @@ test.describe('User send mail API', () => {
 
       const requestAccessRes = await request.post(
         `${WORKER_URL}/user_api/address/${accessRequest.address_id}/request_send_mail_access`,
-        { headers: { 'x-user-token': user.jwt } },
+        { headers: accountHeaders(user.jwt) },
       );
       expect(requestAccessRes.ok()).toBe(true);
 
@@ -129,14 +130,14 @@ test.describe('User send mail API', () => {
       });
       const duplicateAccessRes = await request.post(
         `${WORKER_URL}/user_api/address/${accessRequest.address_id}/request_send_mail_access`,
-        { headers: { 'x-user-token': user.jwt } },
+        { headers: accountHeaders(user.jwt) },
       );
       expect(duplicateAccessRes.status()).toBe(400);
       expect(await duplicateAccessRes.text()).toContain('Already');
 
       const addressSettingsRes = await request.get(
         `${WORKER_URL}/user_api/address/${bound.address_id}/settings`,
-        { headers: { 'x-user-token': user.jwt } },
+        { headers: accountHeaders(user.jwt) },
       );
       expect(addressSettingsRes.ok()).toBe(true);
       const addressSettings = await addressSettingsRes.json();
@@ -151,7 +152,7 @@ test.describe('User send mail API', () => {
       const sendRes = await request.post(
         `${WORKER_URL}/user_api/address/${bound.address_id}/send_mail`,
         {
-          headers: { 'x-user-token': user.jwt },
+          headers: accountHeaders(user.jwt),
           data: {
             from_name: 'User Sender',
             from_mail: outsider.address,
@@ -190,7 +191,7 @@ test.describe('User send mail API', () => {
 
       const unauthorizedDeleteRes = await request.delete(
         `${WORKER_URL}/user_api/sendbox/${outsiderMail.id}`,
-        { headers: { 'x-user-token': user.jwt } },
+        { headers: accountHeaders(user.jwt) },
       );
       expect(unauthorizedDeleteRes.ok()).toBe(true);
       const outsiderSendboxAfterDeleteRes = await request.get(
@@ -201,7 +202,7 @@ test.describe('User send mail API', () => {
 
       const updatedSettingsRes = await request.get(
         `${WORKER_URL}/user_api/address/${bound.address_id}/settings`,
-        { headers: { 'x-user-token': user.jwt } },
+        { headers: accountHeaders(user.jwt) },
       );
       expect((await updatedSettingsRes.json()).send_balance).toBe(9);
 
@@ -215,7 +216,7 @@ test.describe('User send mail API', () => {
       const noBalanceRes = await request.post(
         `${WORKER_URL}/user_api/address/${bound.address_id}/send_mail`,
         {
-          headers: { 'x-user-token': user.jwt },
+          headers: accountHeaders(user.jwt),
           data: {
             to_mail: 'recipient@test.example.com',
             subject: 'No balance user send',
@@ -229,7 +230,7 @@ test.describe('User send mail API', () => {
 
       const userSendboxRes = await request.get(
         `${WORKER_URL}/user_api/sendbox?limit=20&offset=0`,
-        { headers: { 'x-user-token': user.jwt } },
+        { headers: accountHeaders(user.jwt) },
       );
       expect(userSendboxRes.ok()).toBe(true);
       const userSendbox = await userSendboxRes.json();
@@ -239,27 +240,27 @@ test.describe('User send mail API', () => {
 
       const filteredSendboxRes = await request.get(
         `${WORKER_URL}/user_api/sendbox?limit=20&offset=0&address=${encodeURIComponent(bound.address)}`,
-        { headers: { 'x-user-token': user.jwt } },
+        { headers: accountHeaders(user.jwt) },
       );
       expect(filteredSendboxRes.ok()).toBe(true);
       expect((await filteredSendboxRes.json()).count).toBe(1);
 
       const outsiderFilterRes = await request.get(
         `${WORKER_URL}/user_api/sendbox?limit=20&offset=0&address=${encodeURIComponent(outsider.address)}`,
-        { headers: { 'x-user-token': user.jwt } },
+        { headers: accountHeaders(user.jwt) },
       );
       expect(outsiderFilterRes.ok()).toBe(true);
       expect((await outsiderFilterRes.json()).count).toBe(0);
 
       const deleteRes = await request.delete(
         `${WORKER_URL}/user_api/sendbox/${userSendbox.results[0].id}`,
-        { headers: { 'x-user-token': user.jwt } },
+        { headers: accountHeaders(user.jwt) },
       );
       expect(deleteRes.ok()).toBe(true);
 
       const emptySendboxRes = await request.get(
         `${WORKER_URL}/user_api/sendbox?limit=20&offset=0`,
-        { headers: { 'x-user-token': user.jwt } },
+        { headers: accountHeaders(user.jwt) },
       );
       const emptySendbox = await emptySendboxRes.json();
       expect(emptySendbox.count).toBe(0);
@@ -312,7 +313,7 @@ test.describe('User send mail API', () => {
 
       const accessRes = await request.post(
         `${WORKER_URL}/user_api/address/${address.address_id}/request_send_mail_access`,
-        { headers: { 'x-user-token': user.jwt } },
+        { headers: accountHeaders(user.jwt) },
       );
       expect(accessRes.ok()).toBe(true);
       const sender = await getAddressSender(request, address.address);
@@ -324,7 +325,7 @@ test.describe('User send mail API', () => {
       });
 
       const userSettingsRes = await request.get(`${WORKER_URL}/user_api/settings`, {
-        headers: { 'x-user-token': user.jwt },
+        headers: accountHeaders(user.jwt),
       });
       expect(userSettingsRes.ok()).toBe(true);
       const { access_token: accessToken } = await userSettingsRes.json();
@@ -363,7 +364,7 @@ test.describe('User send mail API', () => {
       await bindAddress(request, otherUser.jwt, otherAddress.jwt);
       const otherAccessRes = await request.post(
         `${WORKER_URL}/user_api/address/${otherAddress.address_id}/request_send_mail_access`,
-        { headers: { 'x-user-token': otherUser.jwt } },
+        { headers: accountHeaders(otherUser.jwt) },
       );
       expect(otherAccessRes.ok()).toBe(true);
       const otherSender = await getAddressSender(request, otherAddress.address);
@@ -374,13 +375,40 @@ test.describe('User send mail API', () => {
         enabled: true,
       });
 
+      // A role token issued to a different account is refused outright: the request carries two
+      // credentials that disagree about who is calling, and honouring either one is a guess.
       const mixedHeaders = {
         'x-user-token': otherUser.jwt,
         'x-user-access-token': accessToken,
       };
+      const mismatched = await Promise.all([
+        request.get(
+          `${WORKER_URL}/user_api/address/${otherAddress.address_id}/settings`,
+          { headers: mixedHeaders },
+        ),
+        request.post(
+          `${WORKER_URL}/user_api/address/${otherAddress.address_id}/send_mail`,
+          {
+            headers: mixedHeaders,
+            data: {
+              to_mail: 'recipient@test.example.com',
+              subject: `Mismatched role token ${Date.now()}`,
+              content: 'This message must not be sent',
+              is_html: false,
+            },
+          },
+        ),
+      ]);
+      for (const response of mismatched) {
+        expect(response.status(), response.url()).toBe(401);
+        expect(await response.json()).toMatchObject({ code: 'AUTH_USER_ACCESS_TOKEN_EXPIRED' });
+      }
+
+      // and on its own credential the other account still has no balance to spend, so the
+      // no-limit role was never inherited
       const otherSettingsRes = await request.get(
         `${WORKER_URL}/user_api/address/${otherAddress.address_id}/settings`,
-        { headers: mixedHeaders },
+        { headers: accountHeaders(otherUser.jwt) },
       );
       expect(otherSettingsRes.ok()).toBe(true);
       expect((await otherSettingsRes.json()).send_balance).toBe(0);
@@ -388,7 +416,7 @@ test.describe('User send mail API', () => {
       const otherSendRes = await request.post(
         `${WORKER_URL}/user_api/address/${otherAddress.address_id}/send_mail`,
         {
-          headers: mixedHeaders,
+          headers: accountHeaders(otherUser.jwt),
           data: {
             to_mail: 'recipient@test.example.com',
             subject: `Mismatched role token ${Date.now()}`,

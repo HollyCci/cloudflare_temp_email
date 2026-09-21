@@ -10,6 +10,10 @@
 
 ### Features
 
+- refactor: |Auth| **Behaviour change**: token parsing is unified in `worker/src/user_auth.ts`, giving the user token and the access token one parser each with five outcomes (absent / invalid / no expiry / expired / ok). An `x-user-access-token` that is presented but unusable — wrong signature, expired, or issued to another account — now returns 401 `AUTH_USER_ACCESS_TOKEN_EXPIRED` instead of being silently ignored and downgraded to no role
+- refactor: |Auth| The role has a single source: `getAllowDomains` / `getAddressPrefix` now read the access token the middleware already verified instead of querying the database again. Allowed domains, address prefix, address quota and send balance always agree on the caller's role, and a role change takes effect through the 1-hour access token
+- refactor: |Auth| `ADMIN_API_IP_WHITELIST` no longer wraps its check in a try/catch that let requests through on failure; it now refuses them. Remove `hasAdminAccessToken` and three duplicated copies of the token verification code
+- refactor: |e2e| Add the `accountHeaders()` fixture so account-authenticated requests stop carrying the project-wide admin token, which belongs to no account and only worked because the worker silently ignored it
 - feat: |Auth| **Breaking**: the Admin Console now uses role-based access control (RBAC). Remove `ADMIN_PASSWORDS`, `DISABLE_ADMIN_PASSWORD_CHECK`, the `x-admin-auth` header and the `/open_api/admin_login` endpoint; `/admin/*` only accepts an `x-user-access-token` whose role equals `ADMIN_USER_ROLE` (default `admin`). Admin mail access from the Telegram mini app checks the admin token as well
 - feat: |Worker| Add `ADMIN_USER_EMAILS` admin bootstrap: listed accounts are granted the admin role on login and may register while user registration is disabled; `ADMIN_USER_ROLE` defaults to `admin` and is always included in the available roles, so it need not be repeated in `USER_ROLES`
 - feat: |Frontend| Show the sidebar Admin entry only to admin accounts; `/admin` distinguishes guest / no access / admin states, and the admin password card and `adminAuth` storage are removed
@@ -26,6 +30,8 @@
 
 ### Bug Fixes
 
+- fix: |Auth| The per-role address quota (`ROLE_ADDRESS_CONFIG`) never applied on `/api/new_address`: that path's middleware did not parse the access token, so the role was always empty and the quota was only enforced when binding an address
+- fix: |Frontend| An access token the worker rejects is dropped from the session immediately, and the refresh request itself no longer presents it; the interceptor keeps no route allowlist and follows the worker's error code instead
 - fix: |Mail| Rewrite `cid:` inline images to data URLs and keep data images in mail HTML; send no-referrer on remote images so logos render
 
 ### Improvements

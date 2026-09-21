@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { WORKER_URL, TEST_DOMAIN } from '../../fixtures/test-helpers';
+import { accountHeaders, WORKER_URL, TEST_DOMAIN } from '../../fixtures/test-helpers';
 
 test.describe('Admin New Address', () => {
   test('should return address_id in response', async ({ request }) => {
@@ -76,7 +76,7 @@ test.describe('Admin New Address', () => {
     const { jwt: userJwt } = await loginRes.json();
 
     const createAddressRes = await request.post(`${WORKER_URL}/api/new_address`, {
-      headers: { 'x-user-token': userJwt },
+      headers: accountHeaders(userJwt),
       data: { name },
     });
     expect(createAddressRes.ok()).toBe(true);
@@ -118,7 +118,7 @@ test.describe('Admin New Address', () => {
     const { jwt: userJwt } = await loginRes.json();
 
     const createAddressRes = await request.post(`${WORKER_URL}/api/new_address`, {
-      headers: { 'x-user-token': userJwt },
+      headers: accountHeaders(userJwt),
       data: { name },
     });
     expect(createAddressRes.ok()).toBe(true);

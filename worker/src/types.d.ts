@@ -139,7 +139,7 @@ type UserPayload = {
 
 type Variables = {
     userPayload: UserPayload,
-    userRolePayload: string | undefined | null,
+    userRolePayload: string | null,
     jwtPayload: JwtPayload,
     lang: string | undefined | null
 }

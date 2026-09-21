@@ -402,7 +402,7 @@ export const newAddress = async (
         name = trimLower(c.env.PREFIX) + name;
     }
     // check domain
-    const allowDomains = checkAllowDomains ? await getAllowDomains(c) : getDomains(c);
+    const allowDomains = checkAllowDomains ? getAllowDomains(c) : getDomains(c);
     // if domain is not set, select domain based on environment configuration
     if (!domain && allowDomains.length > 0) {
         const createAddressDefaultDomainFirst = getBooleanValue(c.env.CREATE_ADDRESS_DEFAULT_DOMAIN_FIRST);
@@ -833,28 +833,27 @@ export const ensureBootstrapAdminRole = async (
     return success;
 }
 
-export const getAddressPrefix = async (c: Context<HonoCustomType>): Promise<string | undefined> => {
-    const user = c.get("userPayload");
-    if (!user) {
-        return trimLower(c.env.PREFIX);
-    }
-    const user_role = await commonGetUserRole(c, user.user_id);
-    if (typeof user_role?.prefix === "string") {
-        return trimLower(user_role.prefix);
-    }
-    return trimLower(c.env.PREFIX);
+/**
+ * The caller's role configuration, taken from the access token the auth middleware already
+ * verified. Every role-dependent limit reads this one value, so the allowed domains, the
+ * address prefix, the address quota and the send balance can never disagree about the caller.
+ *
+ * Use `commonGetUserRole` instead when the subject is someone other than the caller.
+ */
+export const getRequestUserRole = (c: Context<HonoCustomType>): UserRole | null => {
+    const role = c.get("userRolePayload");
+    if (!role) return null;
+    return getUserRoles(c).find((item) => item.role === role) || null;
 }
 
-export const getAllowDomains = async (c: Context<HonoCustomType>): Promise<string[]> => {
-    const user = c.get("userPayload");
-    if (!user) {
-        return getDefaultDomains(c);
-    }
-    const user_role = await commonGetUserRole(c, user.user_id);
-    if (user_role?.domains && user_role.domains.length > 0) {
-        return normalizeDomains(user_role.domains);
-    }
-    return getDefaultDomains(c);
+export const getAddressPrefix = (c: Context<HonoCustomType>): string => {
+    const prefix = getRequestUserRole(c)?.prefix;
+    return trimLower(typeof prefix === "string" ? prefix : c.env.PREFIX);
+}
+
+export const getAllowDomains = (c: Context<HonoCustomType>): string[] => {
+    const domains = getRequestUserRole(c)?.domains;
+    return domains && domains.length > 0 ? normalizeDomains(domains) : getDefaultDomains(c);
 }
 
 export async function sendWebhook(

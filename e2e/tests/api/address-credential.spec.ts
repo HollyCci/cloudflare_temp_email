@@ -53,6 +53,8 @@ async function expectRejected(request: APIRequestContext, jwt: string) {
     headers: {
       Authorization: `Bearer ${jwt}`,
       'x-user-token': signToken({ user_id: 1, exp: Math.floor(Date.now() / 1000) + 60 }),
+      // clear the inherited admin role token so the deleted address credential is what fails
+      'x-user-access-token': '',
     },
   });
   expect(bind.status()).toBe(401);

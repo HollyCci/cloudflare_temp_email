@@ -1,7 +1,9 @@
 import { Context, Hono } from 'hono'
 import { cors } from 'hono/cors';
-import { Jwt } from 'hono/utils/jwt'
 import { addressJwtAuth } from './address_auth';
+import {
+	applyUserIdentity, applyUserRole, checkAdminApiIpWhitelist, requireAdminRole,
+} from './user_auth';
 
 import { api as commonApi } from './commom_api';
 import { api as openAuthApi } from './open_api/auth';
@@ -16,7 +18,7 @@ import i18n from './i18n';
 import { ErrorCode } from './error_codes';
 import { email } from './email';
 import { scheduled } from './scheduled';
-import { getPasswords, getBooleanValue, getDomains, getAdminRole, getEnvStringList } from './utils';
+import { getPasswords, getBooleanValue, getDomains } from './utils';
 import { checkAccessControl } from './ip_blacklist';
 
 const API_PATHS = [
@@ -113,163 +115,69 @@ app.use('/*', async (c, next) => {
 	await next()
 });
 
-const checkUserPayload = async (
-	c: Context<HonoCustomType>
-): Promise<void> => {
-	try {
-		const token = c.req.raw.headers.get("x-user-token");
-		if (!token) return;
-		const payload = await Jwt.verify(token, c.env.JWT_SECRET, "HS256");
-		// check expired
-		if (!payload.exp) return;
-		// exp is in seconds
-		if (payload.exp < Math.floor(Date.now() / 1000)) {
-			return;
-		}
-		c.set("userPayload", payload as UserPayload);
-	} catch (e) {
-		console.error(e);
-	}
-}
+/** Paths under `/user_api/` that must stay reachable without an account. */
+const PUBLIC_USER_API_PATHS = [
+	"/user_api/open_settings",
+	"/user_api/register",
+	"/user_api/login",
+	"/user_api/verify_code",
+	"/user_api/passkey/authenticate_",
+	"/user_api/oauth2",
+];
 
-const checkoutUserRolePayload = async (
-	c: Context<HonoCustomType>,
-	userId?: number
-): Promise<Response | void> => {
-	try {
-		const token = c.req.raw.headers.get("x-user-access-token");
-		if (!token) return;
-		const payload = await Jwt.verify(token, c.env.JWT_SECRET, { alg: "HS256", exp: false });
-		// check expired
-		if (!payload.exp) return;
-		// exp is in seconds
-		if (payload.exp < Math.floor(Date.now() / 1000)) {
-			return c.json({ code: ErrorCode.AUTH_USER_ACCESS_TOKEN_EXPIRED, message: i18n.getMessagesbyContext(c).UserAcceesTokenExpiredMsg }, 401);
-		}
-		if (typeof payload?.user_role !== "string") return;
-		if (userId !== undefined && payload.user_id !== userId) return;
-		c.set("userRolePayload", payload.user_role);
-	} catch (e) {
-		console.error(e);
-	}
-}
-
-// api auth
+// api auth: an address credential, plus the caller's role when one is presented
 app.use('/api/*', async (c, next) => {
+	// creating an address is open to anonymous callers, and reads the account when there is one
 	if (c.req.path.startsWith("/api/new_address")) {
-		await checkUserPayload(c);
-		await next();
-		return;
+		const identityResponse = await applyUserIdentity(c, { required: false });
+		if (identityResponse) return identityResponse;
+		// the quota and the allowed domains come from the role, so it must be the caller's own
+		const roleResponse = await applyUserRole(c, c.get("userPayload")?.user_id);
+		if (roleResponse) return roleResponse;
+		return await next();
 	}
-	if (c.req.path.startsWith("/api/settings")
-		|| c.req.path.startsWith("/api/send_mail")
-	) {
-		const response = await checkoutUserRolePayload(c);
-		if (response) return response;
-	}
+
+	const roleResponse = await applyUserRole(c);
+	if (roleResponse) return roleResponse;
+
+	// address_login is how an address credential is obtained, so it cannot require one
 	if (c.req.path.startsWith("/api/address_login")) {
-		await next();
-		return;
+		return await next();
 	}
 
 	try {
 		return await addressJwtAuth(c, next);
 	} catch (e) {
 		console.warn(e);
-		const lang = c.get("lang") || c.env.DEFAULT_LANG;
-		const msgs = i18n.getMessages(lang);
-		return c.text(msgs.InvalidAddressCredentialMsg, 401)
+		return c.text(i18n.getMessagesbyContext(c).InvalidAddressCredentialMsg, 401)
 	}
 });
-// user_api auth
+// user_api auth: an account, plus the role that account was issued
 app.use('/user_api/*', async (c, next) => {
-	if (
-		c.req.path.startsWith("/user_api/open_settings")
-		|| c.req.path.startsWith("/user_api/register")
-		|| c.req.path.startsWith("/user_api/login")
-		|| c.req.path.startsWith("/user_api/verify_code")
-		|| c.req.path.startsWith("/user_api/passkey/authenticate_")
-		|| c.req.path.startsWith("/user_api/oauth2")
-	) {
-		await next();
-		return;
+	if (PUBLIC_USER_API_PATHS.some((path) => c.req.path.startsWith(path))) {
+		return await next();
 	}
 
-	const lang = c.req.raw.headers.get("x-lang") || c.env.DEFAULT_LANG;
-	const msgs = i18n.getMessages(lang);
+	const identityResponse = await applyUserIdentity(c, { required: true });
+	if (identityResponse) return identityResponse;
 
-	try {
-		const token = c.req.raw.headers.get("x-user-token");
-		if (!token) return c.text(msgs.UserTokenExpiredMsg, 401)
-		const payload = await Jwt.verify(token, c.env.JWT_SECRET, "HS256");
-		// check expired
-		if (!payload.exp) return c.text(msgs.UserTokenExpiredMsg, 401);
-		// exp is in seconds
-		if (payload.exp < Math.floor(Date.now() / 1000)) {
-			return c.text(msgs.UserTokenExpiredMsg, 401)
-		}
-		c.set("userPayload", payload as UserPayload);
-	} catch (e) {
-		console.error(e);
-		return c.text(msgs.UserTokenExpiredMsg, 401)
-	}
-	if (
-		c.req.path.startsWith("/user_api/bind_address")
-		|| c.req.path.startsWith("/user_api/address/")
-	) {
-		const { user_id } = c.get("userPayload");
-		const response = await checkoutUserRolePayload(c, user_id);
-		if (response) return response;
-	}
-	if (c.req.path.startsWith('/user_api/bind_address')
-		&& c.req.method === 'POST'
-	) {
+	const roleResponse = await applyUserRole(c, c.get("userPayload").user_id);
+	if (roleResponse) return roleResponse;
+
+	// binding an address proves ownership of that address as well as of the account
+	if (c.req.path.startsWith('/user_api/bind_address') && c.req.method === 'POST') {
 		return addressJwtAuth(c, next);
 	}
 	await next();
 });
-// admin auth
+// admin auth: the access token must carry the admin role
 app.use('/admin/*', async (c, next) => {
-	const lang = c.req.raw.headers.get("x-lang") || c.env.DEFAULT_LANG;
-	const msgs = i18n.getMessages(lang);
-	try {
-		const ipWhitelist = getEnvStringList(c.env.ADMIN_API_IP_WHITELIST)
-			.filter(ip => typeof ip === "string")
-			.map(ip => ip.trim())
-			.filter(Boolean);
-		if (ipWhitelist.length > 0) {
-			const reqIp = c.req.raw.headers.get("cf-connecting-ip")?.trim();
-			if (!reqIp || !ipWhitelist.includes(reqIp)) {
-				return c.text(msgs.AdminApiIpNotAllowedMsg, 403);
-			}
-		}
-	} catch (e) {
-		console.error("Failed to check admin API IP whitelist", e);
-	}
+	const ipResponse = checkAdminApiIpWhitelist(c);
+	if (ipResponse) return ipResponse;
 
-	// Admin access is role-based: the user access token must carry the admin role.
-	const access_token = c.req.raw.headers.get("x-user-access-token");
-	if (!access_token) {
-		return c.json({ code: ErrorCode.AUTH_ADMIN_CREDENTIAL_INVALID, message: msgs.AdminLoginRequiredMsg }, 401)
-	}
-	let payload: Awaited<ReturnType<typeof Jwt.verify>>;
-	try {
-		payload = await Jwt.verify(access_token, c.env.JWT_SECRET, { alg: "HS256", exp: false });
-	} catch (e) {
-		console.error(e);
-		return c.json({ code: ErrorCode.AUTH_ADMIN_CREDENTIAL_INVALID, message: msgs.AdminLoginRequiredMsg }, 401)
-	}
-	if (!payload.exp) {
-		return c.json({ code: ErrorCode.AUTH_ADMIN_CREDENTIAL_INVALID, message: msgs.UserAcceesTokenExpiredMsg }, 401);
-	}
-	// exp is in seconds
-	if (payload.exp < Math.floor(Date.now() / 1000)) {
-		return c.json({ code: ErrorCode.AUTH_USER_ACCESS_TOKEN_EXPIRED, message: msgs.UserAcceesTokenExpiredMsg }, 401);
-	}
-	if (payload.user_role !== getAdminRole(c)) {
-		return c.json({ code: ErrorCode.AUTH_ADMIN_CREDENTIAL_INVALID, message: msgs.UserRoleIsNotAdminMsg }, 401)
-	}
-	c.set("userRolePayload", payload.user_role);
+	const roleResponse = await requireAdminRole(c);
+	if (roleResponse) return roleResponse;
+
 	await next();
 });
 

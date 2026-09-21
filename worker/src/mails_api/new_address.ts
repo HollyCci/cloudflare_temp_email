@@ -52,7 +52,7 @@ const createNewAddress = async (c: Context<HonoCustomType>) => {
         console.error(error);
     }
     try {
-        const addressPrefix = await getAddressPrefix(c);
+        const addressPrefix = getAddressPrefix(c);
         const sourceMeta = c.req.header('CF-Connecting-IP')
             || c.req.header('X-Forwarded-For')?.split(',')[0]?.trim()
             || c.req.header('X-Real-IP')

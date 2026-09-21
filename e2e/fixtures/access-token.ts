@@ -40,3 +40,14 @@ export function adminAccessToken(secret: string = E2E_JWT_SECRET, expiresInSecon
 export function adminHeaders(secret: string = E2E_JWT_SECRET): Record<string, string> {
   return { 'x-user-access-token': adminAccessToken(secret) };
 }
+
+/**
+ * Headers for acting as an account.
+ *
+ * The empty `x-user-access-token` clears the project-level admin role token. That token is
+ * signed for no particular account, and the worker refuses a role token it cannot bind to the
+ * caller rather than silently dropping the role, so it must not ride along on account calls.
+ */
+export function accountHeaders(userJwt: string): Record<string, string> {
+  return { 'x-user-token': userJwt, 'x-user-access-token': '' };
+}
