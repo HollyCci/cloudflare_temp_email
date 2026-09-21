@@ -74,18 +74,20 @@ if [ -n "${WORKER_URL_SITE_PASSWORD:-}" ]; then
   done
 fi
 
-echo "==> Waiting for frontend at $FRONTEND_URL ..."
-for i in $(seq 1 60); do
-  if curl -skf "$FRONTEND_URL" > /dev/null 2>&1; then
-    echo "    Frontend ready after ${i}s"
-    break
-  fi
-  if [ "$i" -eq 60 ]; then
-    echo "ERROR: Frontend not ready after 60s"
-    exit 1
-  fi
-  sleep 1
-done
+if [ -n "${FRONTEND_URL:-}" ]; then
+  echo "==> Waiting for frontend at $FRONTEND_URL ..."
+  for i in $(seq 1 60); do
+    if curl -skf "$FRONTEND_URL" > /dev/null 2>&1; then
+      echo "    Frontend ready after ${i}s"
+      break
+    fi
+    if [ "$i" -eq 60 ]; then
+      echo "ERROR: Frontend not ready after 60s"
+      exit 1
+    fi
+    sleep 1
+  done
+fi
 
 if [ -n "${FRONTEND_URL_ENV_OFF:-}" ]; then
   echo "==> Waiting for env-off frontend at $FRONTEND_URL_ENV_OFF ..."

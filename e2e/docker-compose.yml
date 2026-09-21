@@ -108,7 +108,10 @@ services:
       start_period: 10s
       retries: 20
 
+  # Browser tests only. The frontend image needs a HeroUI Pro licence key
+  # (HEROUI_SETUP_KEY) to fetch the Pro artifacts, so it is not built by default.
   frontend:
+    profiles: ["browser"]
     build:
       context: ..
       dockerfile: e2e/Dockerfile.frontend
@@ -119,6 +122,7 @@ services:
         condition: service_healthy
 
   frontend-env-off:
+    profiles: ["browser"]
     build:
       context: ..
       dockerfile: e2e/Dockerfile.frontend
@@ -179,8 +183,9 @@ services:
       WORKER_GZIP_URL: http://worker-gzip:8788
       WORKER_URL_SEND_MAIL_DOMAIN: http://worker-send-mail-domain:8791
       WORKER_URL_SITE_PASSWORD: http://worker-site-password:8792
-      FRONTEND_URL: https://frontend:5173
-      FRONTEND_URL_ENV_OFF: https://frontend-env-off:5174
+      # Empty unless the browser profile is up; the entrypoint skips the wait when unset.
+      FRONTEND_URL: ${E2E_FRONTEND_URL:-}
+      FRONTEND_URL_ENV_OFF: ${E2E_FRONTEND_URL_ENV_OFF:-}
       MAILPIT_API: http://mailpit:8025/api
       SMTP_PROXY_HOST: smtp-proxy
       SMTP_PROXY_SMTP_PORT: "8025"
@@ -202,14 +207,12 @@ services:
         condition: service_healthy
       worker-site-password:
         condition: service_healthy
-      frontend:
-        condition: service_started
-      frontend-env-off:
-        condition: service_started
       smtp-proxy:
         condition: service_started
       smtp-proxy-tls:
         condition: service_started
+    # Projects to run; override to widen (e.g. E2E_PROJECTS="--project=api --project=browser").
+    command: ${E2E_PROJECTS:---project=api}
     volumes:
       - ./test-results:/app/e2e/test-results
       - ./playwright-report:/app/e2e/playwright-report

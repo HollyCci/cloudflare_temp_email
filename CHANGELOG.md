@@ -30,6 +30,7 @@
 
 ### Bug Fixes
 
+- fix: |e2e| 修复 e2e 构建：`Dockerfile.frontend` 在装依赖前只 COPY 了 `package.json`/`pnpm-lock.yaml`，而 `postinstall` 要跑尚未入镜像的 `scripts/setup-heroui-pro.mjs`，自 React 重写起 e2e 就无法构建。前端容器改到 `browser` profile（其镜像需要 HeroUI Pro 授权密钥 `HEROUI_SETUP_KEY`），默认只跑 `--project=api`；入口脚本等待前端的逻辑补上与其他可选服务一致的守卫
 - fix: |鉴权| 按角色配置的地址数量上限（`ROLE_ADDRESS_CONFIG`）在 `/api/new_address` 从未生效：该路径的中间件不解析访问令牌，角色恒为空，只有绑定地址时才会校验
 - fix: |Frontend| 访问令牌被服务端拒绝后立即从会话中清除，刷新请求本身也不再携带它；拦截器不再维护路由白名单，改以服务端返回的错误码为准
 - fix: |邮件| 将 `cid:` 内嵌图转为 data URL，并保留邮件 HTML 中的 data 图片；远程图使用 no-referrer，避免 Logo 裂图

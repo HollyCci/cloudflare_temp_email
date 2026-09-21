@@ -30,6 +30,7 @@
 
 ### Bug Fixes
 
+- fix: |e2e| Fix the e2e build: `Dockerfile.frontend` copied only `package.json`/`pnpm-lock.yaml` before installing, while `postinstall` runs `scripts/setup-heroui-pro.mjs`, which is not in the image yet — e2e has been unbuildable since the React rewrite. The frontend containers move behind a `browser` profile (their image needs the HeroUI Pro licence key `HEROUI_SETUP_KEY`), the default run is `--project=api`, and the entrypoint's frontend wait is now guarded like every other optional service
 - fix: |Auth| The per-role address quota (`ROLE_ADDRESS_CONFIG`) never applied on `/api/new_address`: that path's middleware did not parse the access token, so the role was always empty and the quota was only enforced when binding an address
 - fix: |Frontend| An access token the worker rejects is dropped from the session immediately, and the refresh request itself no longer presents it; the interceptor keeps no route allowlist and follows the worker's error code instead
 - fix: |Mail| Rewrite `cid:` inline images to data URLs and keep data images in mail HTML; send no-referrer on remote images so logos render
