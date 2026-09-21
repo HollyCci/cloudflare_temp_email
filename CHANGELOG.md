@@ -6,7 +6,7 @@
   <a href="CHANGELOG_EN.md">English</a>
 </p>
 
-## v1.13.0(main)
+## v1.13.0
 
 ### Features
 
