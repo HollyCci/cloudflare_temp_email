@@ -11,7 +11,7 @@
 ### Features
 
 - refactor: |鉴权| **行为变更**：令牌解析统一到 `worker/src/user_auth.ts`，用户令牌与访问令牌各有唯一入口，结果为「未携带 / 无效 / 缺过期时间 / 已过期 / 有效」五态。携带但无法使用的 `x-user-access-token`（签名不符、已过期、不属于当前账号）一律返回 401 `AUTH_USER_ACCESS_TOKEN_EXPIRED`，不再被静默忽略、降级为无角色
-- refactor: |鉴权| 角色只保留一个来源：`getAllowDomains` / `getAddressPrefix` 改为读取中间件已校验的访问令牌，不再额外查库。可用域名、地址前缀、地址数量上限与发信额度现在始终依据同一个角色，角色变更经 1 小时有效期的访问令牌生效
+- refactor: |鉴权| 角色只保留一个解析入口 `getRequestUserRole`：请求已确立身份时取该账号的实时角色，没有身份可依据时（如 `/admin/*`，控制台只带访问令牌）取令牌中的角色声明——身份优先于持票声明，因为令牌只是角色最多一小时的缓存。可用域名、地址前缀、地址数量上限与发信额度全部改读这一个入口，不再各自取用不同来源
 - refactor: |鉴权| `ADMIN_API_IP_WHITELIST` 校验移除 try/catch 兜底，解析失败即拒绝而非放行；删除 `hasAdminAccessToken` 及三处重复的令牌校验代码
 - refactor: |e2e| 新增 `accountHeaders()` 夹具：以账号身份发起的请求不再顺带携带全局管理员令牌（该令牌不属于任何账号，此前依赖服务端静默忽略才能成立）
 - feat: |鉴权| **破坏性变更**：管理后台改为基于角色的访问控制（RBAC）。移除 `ADMIN_PASSWORDS`、`DISABLE_ADMIN_PASSWORD_CHECK`、`x-admin-auth` 请求头与 `/open_api/admin_login` 接口，`/admin/*` 仅接受角色等于 `ADMIN_USER_ROLE`（默认 `admin`）的 `x-user-access-token`；Telegram 小程序管理员查信同样改为校验管理员令牌

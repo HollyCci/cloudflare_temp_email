@@ -6,7 +6,8 @@ import { ErrorCode } from './error_codes';
 import { getAdminRole, getEnvStringList } from './utils';
 
 export type AccessTokenPayload = {
-    user_id: number
+    /** Absent on tokens minted for a role rather than an account (an operator's admin token). */
+    user_id?: number
     user_role: string
 }
 
@@ -54,12 +55,19 @@ export const readUserToken = (
         : null
 ));
 
-/** `x-user-access-token` — what the caller may do. Issued by `/user_api/settings`, lives 1 hour. */
+/**
+ * `x-user-access-token` — what the caller may do. Issued by `/user_api/settings`, lives 1 hour.
+ * The role is the claim that matters; `user_id` is present whenever the token was issued for an
+ * account, and `applyUserRole` requires it wherever the role must belong to a known caller.
+ */
 export const readAccessToken = (
     c: Context<HonoCustomType>
 ): Promise<Credential<AccessTokenPayload>> => readCredential(c, 'x-user-access-token', (payload) => (
-    typeof payload.user_id === 'number' && typeof payload.user_role === 'string'
-        ? payload as AccessTokenPayload
+    typeof payload.user_role === 'string'
+        ? {
+            user_role: payload.user_role,
+            user_id: typeof payload.user_id === 'number' ? payload.user_id : undefined,
+        }
         : null
 ));
 
@@ -104,6 +112,8 @@ export const applyUserRole = async (
         return;
     }
     if (credential.state !== 'ok') return staleAccessTokenResponse(c);
+    // A token with no `user_id` cannot be shown to belong to this caller, so it is refused here
+    // exactly like one naming somebody else.
     if (expectedUserId !== undefined && credential.payload.user_id !== expectedUserId) {
         return staleAccessTokenResponse(c);
     }

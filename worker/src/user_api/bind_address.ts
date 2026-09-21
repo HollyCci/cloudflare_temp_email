@@ -4,7 +4,7 @@ import { Jwt } from 'hono/utils/jwt'
 import { isAddressCountLimitReached } from "../utils"
 import { unbindTelegramByAddress } from '../telegram_api/common';
 import i18n from '../i18n';
-import { updateAddressUpdatedAt, commonGetUserRole, handleListQuery, hideObjectFields } from '../common';
+import { updateAddressUpdatedAt, commonGetUserRole, getRequestUserRole, handleListQuery, hideObjectFields } from '../common';
 
 export const getBindedAddressById = async (
     c: Context<HonoCustomType>,
@@ -56,7 +56,7 @@ const UserBindAddressModule = {
         ).bind(user_id, address_id).first("user_id");
         if (db_user_address_id) return c.json({ success: true })
         // check if binded address count
-        const userRole = c.get("userRolePayload");
+        const userRole = (await getRequestUserRole(c))?.role;
         if (await isAddressCountLimitReached(c, user_id, userRole)) {
             return c.text(msgs.MaxAddressCountReachedMsg, 400)
         }

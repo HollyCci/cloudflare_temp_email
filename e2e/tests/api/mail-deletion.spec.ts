@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { test, expect } from '@playwright/test';
-import { accountHeaders, ADMIN_HEADERS_ENV_OFF, WORKER_URL, WORKER_URL_ENV_OFF, createTestAddress, seedTestMail, deleteAddress } from '../../fixtures/test-helpers';
+import { accountHeaders, ADMIN_HEADERS_ENV_OFF, NO_ADMIN_TOKEN, WORKER_URL, WORKER_URL_ENV_OFF, createTestAddress, seedTestMail, deleteAddress } from '../../fixtures/test-helpers';
 
 test.describe('Mail Deletion', () => {
   test('user mail deletion is disabled when ENABLE_USER_DELETE_EMAIL is false', async ({ request }) => {
@@ -32,6 +32,7 @@ test.describe('Mail Deletion', () => {
     expect(userJwt).toBeTruthy();
 
     const createRes = await request.post(`${WORKER_URL_ENV_OFF}/api/new_address`, {
+      headers: NO_ADMIN_TOKEN,
       data: {
         name: `user-del-disabled${Date.now()}`,
         domain: 'test.example.com',

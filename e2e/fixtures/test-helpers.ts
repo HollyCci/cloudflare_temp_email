@@ -4,6 +4,7 @@ import WebSocket from 'ws';
 import {
   E2E_JWT_SECRET_ENV_OFF,
   E2E_JWT_SECRET_SITE_PASSWORD,
+  NO_ADMIN_TOKEN,
   adminHeaders,
 } from './access-token.ts';
 
@@ -104,6 +105,7 @@ export async function createTestAddress(
 ): Promise<{ jwt: string; address: string; address_id: number }> {
   const uniqueName = `${name}${Date.now()}`;
   const res = await ctx.post(`${workerUrl}/api/new_address`, {
+    headers: NO_ADMIN_TOKEN,
     data: { name: uniqueName, domain },
   });
   if (!res.ok()) {
