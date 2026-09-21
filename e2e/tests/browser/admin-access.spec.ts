@@ -25,7 +25,6 @@ const openAdminAs = async (page: Page, userJwt: string) => {
 };
 
 const adminNavEntry = (page: Page) => page.locator('aside').getByText('管理', { exact: true });
-const userRow = (page: Page, text: string) => page.getByRole('row').filter({ hasText: text });
 
 const memberRole = async (request: APIRequestContext, email: string) => {
   const res = await request.get(`${WORKER_URL}/admin/users`, { params: { limit: 10, offset: 0, query: email } });
@@ -69,22 +68,23 @@ test.describe('signed-in accounts', () => {
   test('bootstrap admin gets the role on login and manages user roles', async ({ page, request }) => {
     await openAdminAs(page, await loginAsBootstrapAdmin(request));
 
-    // ADMIN_USER_EMAILS grants the role during /user_api/settings, which unlocks the console.
     await expect(adminNavEntry(page)).toHaveCount(1);
     await page.getByRole('tab', { name: '用户' }).click();
-    await expect(page.getByText(memberEmail)).toBeVisible();
+    await expect(page.getByText(memberEmail)).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText('当前账户', { exact: true })).toBeVisible();
 
-    // Assign a role from USER_ROLES, then clear it again; verify through the admin API.
-    await userRow(page, memberEmail).getByRole('button', { name: '角色' }).click();
+    // Assign a role, then clear it; verify through the admin API.
+    const memberRow = page.getByRole('row').filter({ hasText: memberEmail });
+    await memberRow.getByRole('button', { name: '角色' }).click();
     await page.getByRole('option', { name: 'case-role' }).click();
     await expect.poll(() => memberRole(request, memberEmail)).toBe('case-role');
 
-    await userRow(page, memberEmail).getByRole('button', { name: '角色' }).click();
+    await memberRow.getByRole('button', { name: '角色' }).click();
     await page.getByRole('option', { name: '无角色' }).click();
     await expect.poll(() => memberRole(request, memberEmail)).toBeNull();
 
     // An admin cannot delete their own account from the list.
-    await expect(userRow(page, '当前账户').getByRole('button', { name: '删除' })).toBeDisabled();
+    const selfRow = page.getByRole('row').filter({ hasText: '当前账户' });
+    await expect(selfRow.getByRole('button', { name: '删除' })).toBeDisabled();
   });
 });

@@ -1,5 +1,4 @@
 import { expect, test } from '../../fixtures/test';
-
 import { FRONTEND_URL } from '../../fixtures/test-helpers';
 
 test.describe('Locale', () => {

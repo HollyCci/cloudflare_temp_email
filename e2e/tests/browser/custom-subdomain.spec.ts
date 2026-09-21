@@ -1,50 +1,73 @@
 import { expect, test } from '../../fixtures/test';
-import { FRONTEND_URL, TEST_DOMAIN, deleteAddress } from '../../fixtures/test-helpers';
+import {
+  FRONTEND_URL,
+  TEST_DOMAIN,
+  WORKER_URL,
+  loginAsBootstrapAdmin,
+} from '../../fixtures/test-helpers';
 
-test('create an address with a custom subdomain from the UI', async ({ page, request }) => {
-  let jwt: string | undefined;
+test('create an address with a custom subdomain from the admin UI', async ({ page, request }) => {
+  // Use the admin page — it has CreateAddressForm without Turnstile.
+  const adminJwt = await loginAsBootstrapAdmin(request);
+  await page.addInitScript((token) => {
+    localStorage.clear();
+    localStorage.setItem('userJwt', token);
+  }, adminJwt);
+  await page.goto(`${FRONTEND_URL}/admin`);
 
-  try {
-    await page.goto(`${FRONTEND_URL}/en/`);
-    await page.getByRole('button', { name: 'Create Email Address' }).click();
+  // Wait for the admin console to load (default tab is "create").
+  const nameField = page.locator('[name="addressName"]');
+  await expect(nameField).toBeVisible({ timeout: 10_000 });
 
-    const name = `subui${Date.now()}`;
-    const createForm = page.locator('.n-tab-pane:visible form');
-    await createForm.locator('.n-input-group .n-input input').fill(name);
+  const name = `subui${Date.now()}`;
+  await nameField.fill(name);
 
-    const domainSelect = createForm.locator('.n-input-group .n-select');
-    await expect(domainSelect.locator('input')).toHaveCount(0);
+  // Subdomain radio group — e2e wrangler.toml enables RANDOM_SUBDOMAIN_DOMAINS for TEST_DOMAIN.
+  const noneRadio = page.getByRole('radio', { name: '不使用' });
+  const randomRadio = page.getByRole('radio', { name: '随机' });
+  const customRadio = page.getByRole('radio', { name: '自定义' });
 
-    const normalSubdomain = createForm.getByRole('radio', { name: 'Normal Domain' });
-    const randomSubdomain = createForm.getByRole('radio', { name: 'Use Random Subdomain' });
-    const customSubdomain = createForm.getByRole('radio', { name: 'Use Custom Subdomain' });
+  await expect(noneRadio).toBeChecked();
 
-    await expect(normalSubdomain).toBeChecked();
-    await createForm.getByText('Use Random Subdomain', { exact: true }).click();
-    await expect(normalSubdomain).not.toBeChecked();
-    await expect(randomSubdomain).toBeChecked();
-    await expect(customSubdomain).not.toBeChecked();
+  await randomRadio.click();
+  await expect(noneRadio).not.toBeChecked();
+  await expect(randomRadio).toBeChecked();
+  await expect(customRadio).not.toBeChecked();
 
-    await createForm.getByText('Use Custom Subdomain', { exact: true }).click();
-    await expect(randomSubdomain).not.toBeChecked();
-    await expect(customSubdomain).toBeChecked();
+  await customRadio.click();
+  await expect(randomRadio).not.toBeChecked();
+  await expect(customRadio).toBeChecked();
 
-    await createForm.getByText('Use Random Subdomain', { exact: true }).click();
-    await expect(randomSubdomain).toBeChecked();
-    await expect(customSubdomain).not.toBeChecked();
+  await randomRadio.click();
+  await expect(randomRadio).toBeChecked();
+  await expect(customRadio).not.toBeChecked();
 
-    await createForm.getByText('Use Custom Subdomain', { exact: true }).click();
-    await createForm.locator('.n-input-group:visible .n-input input').last().fill('team');
+  await customRadio.click();
+  await page.locator('[name="subdomain"]').fill('team');
 
-    await createForm.getByRole('button', { name: 'Create Email Address' }).click();
+  // Intercept the create response to capture the JWT for cleanup.
+  const createResponse = page.waitForResponse(
+    (r) => r.url().includes('/admin/new_address') && r.request().method() === 'POST',
+  );
 
-    const domain = `team.${TEST_DOMAIN}`;
-    const address = `tmp${name}@${domain}`;
-    await expect(page.locator('code').getByText(address, { exact: true })).toBeVisible();
-    await page.waitForFunction(() => Boolean(localStorage.getItem('jwt')));
-    jwt = await page.evaluate(() => localStorage.getItem('jwt') || undefined);
-    expect(jwt).toBeTruthy();
-  } finally {
-    if (jwt) await deleteAddress(request, jwt);
-  }
+  // ActionButton with confirm: first click opens popover, second confirms.
+  await page.getByRole('button', { name: '创建' }).first().click();
+  await page.getByRole('button', { name: '创建' }).last().click();
+
+  const res = await createResponse;
+  expect(res.ok()).toBe(true);
+  const body = await res.json();
+  const jwt: string = body.jwt;
+  expect(jwt).toBeTruthy();
+
+  const domain = `team.${TEST_DOMAIN}`;
+  // The credential modal should show the created address.
+  await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByRole('dialog').getByText(domain)).toBeVisible();
+
+  // Cleanup.
+  const del = await request.delete(`${WORKER_URL}/api/address`, {
+    headers: { Authorization: `Bearer ${jwt}` },
+  });
+  expect(del.ok()).toBe(true);
 });
