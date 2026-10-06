@@ -6,15 +6,17 @@
   <a href="CHANGELOG_EN.md">English</a>
 </p>
 
-## v1.13.2(main)
-
-### Breaking Changes
-
-- breaking: |Telegram| 移除 Telegram 小程序（Mini App）。v1.13.0 换成 React 前端后已经没有小程序页面：`VITE_IS_TELEGRAM` 不再被读取，CI 部署到 `TG_FRONTEND_NAME` 的「小程序」和发版附带的 `telegram-frontend.zip` 实际都是普通收件箱；配置了小程序 URL 时，Bot 邮件消息上的「查看邮件」按钮打开的也只是普通收件箱，看不到那封邮件。现删除 Worker 的小程序接口（`/telegram/get_bind_address`、`new_address`、`bind_address`、`unbind_address`、`get_mail`）、Telegram 设置中的 `miniAppUrl` 与「查看邮件」按钮，以及前端 `/telegram_mail` 路由、`build:telegram*`/`deploy:*telegram` 脚本、对应的 CI 任务和 `telegram-frontend.zip`；Bot 的欢迎语与邮件截断、解析失败提示改为引导到网页邮箱。Bot 命令与邮件推送不受影响；仍在使用 v1.12 及更早版本小程序前端的部署，升级 Worker 后小程序将无法使用
+## v1.13.3(main)
 
 ### Features
 
 - feat: |Admin| 地址列表显示归属账户邮箱，未绑定显示「未绑定」
+
+## v1.13.2
+
+### Breaking Changes
+
+- breaking: |Telegram| 移除 Telegram 小程序（Mini App）。v1.13.0 换成 React 前端后已经没有小程序页面：`VITE_IS_TELEGRAM` 不再被读取，CI 部署到 `TG_FRONTEND_NAME` 的「小程序」和发版附带的 `telegram-frontend.zip` 实际都是普通收件箱；配置了小程序 URL 时，Bot 邮件消息上的「查看邮件」按钮打开的也只是普通收件箱，看不到那封邮件。现删除 Worker 的小程序接口（`/telegram/get_bind_address`、`new_address`、`bind_address`、`unbind_address`、`get_mail`）、Telegram 设置中的 `miniAppUrl` 与「查看邮件」按钮，以及前端 `/telegram_mail` 路由、`build:telegram*`/`deploy:*telegram` 脚本、对应的 CI 任务和 `telegram-frontend.zip`；Bot 的欢迎语与邮件截断、解析失败提示改为引导到网页邮箱。Bot 命令与邮件推送不受影响；仍在使用 v1.12 及更早版本小程序前端的部署，升级 Worker 后小程序将无法使用
 
 ### Bug Fixes
 
