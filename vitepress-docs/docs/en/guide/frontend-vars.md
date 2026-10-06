@@ -36,8 +36,13 @@ No frontend variable is required for every deployment method. `VITE_API_BASE` is
 | --- | --- | --- | --- | --- | --- |
 | `VITE_API_BASE` | `API_BASE` | Depends on deployment | Text | Empty | Backend API root URL beginning with `https://` and without a trailing `/`; an empty value uses the same-origin API |
 | `VITE_CF_WEB_ANALY_TOKEN` | `CF_WEB_ANALY_TOKEN` | No | Text | Empty | Cloudflare Web Analytics Token |
-| `VITE_IS_TELEGRAM` | `IS_TELEGRAM` | No | Boolean | `false` | Whether to enable Telegram Mini App; see [Telegram Configuration](/en/guide/feature/telegram) |
-| `VITE_GOOGLE_AD_CLIENT` | `GOOGLE_AD_CLIENT` | No | Text | Empty | Google AdSense Client ID; see [Google Ads Configuration](/en/guide/feature/google-ads) |
-| `VITE_GOOGLE_AD_SLOT` | `GOOGLE_AD_SLOT` | No | Text | Empty | Google AdSense Slot ID; see [Google Ads Configuration](/en/guide/feature/google-ads) |
 
-Since v1.13.0 the frontend UI is Chinese only and no longer reads `VITE_DEFAULT_LANG` (`DEFAULT_LANG` in `app-config`); you can remove it from existing configurations. The `DEFAULT_LANG` [Worker variable](/en/guide/worker-vars) is a separate setting and is unaffected.
+## Removed Variables
+
+The frontend has not read these variables since v1.13.0, so setting them has no effect. You can delete them from existing configurations (ENV or `app-config`):
+
+| ENV Variable | `app-config` Field | Notes |
+| --- | --- | --- |
+| `VITE_DEFAULT_LANG` | `DEFAULT_LANG` | The frontend UI is Chinese only. The `DEFAULT_LANG` [Worker variable](/en/guide/worker-vars) is a separate setting and is unaffected |
+| `VITE_IS_TELEGRAM` | `IS_TELEGRAM` | The Telegram Mini App has been removed; bot commands and mail push are unaffected. See [Telegram Bot](/en/guide/feature/telegram) |
+| `VITE_GOOGLE_AD_CLIENT`, `VITE_GOOGLE_AD_SLOT` | `GOOGLE_AD_CLIENT`, `GOOGLE_AD_SLOT` | Google Ads has been removed |

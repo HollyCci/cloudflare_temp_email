@@ -1,40 +1,35 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
-import { createHmac } from 'node:crypto';
 
 import { WORKER_URL, createTestAddress } from '../../fixtures/test-helpers';
 
-function initData(userId: number) {
-  const fields = {
-    auth_date: String(Math.floor(Date.now() / 1000)),
-    user: JSON.stringify({ id: userId }),
-  };
-  const key = createHmac('sha256', 'WebAppData').update('e2e-telegram-test-token').digest();
-  const hash = createHmac('sha256', key)
-    .update(Object.entries(fields).map(([name, value]) => `${name}=${value}`).join('\n'))
-    .digest('hex');
-  return new URLSearchParams({ ...fields, hash }).toString();
+// Drives the bot through its webhook; the replies are Chinese because e2e sets neither
+// DEFAULT_LANG nor TG_ALLOW_USER_LANG.
+async function command(request: APIRequestContext, userId: number, text: string): Promise<string> {
+  const response = await request.post(`${WORKER_URL}/__test/telegram_command`, {
+    data: { userId, text },
+  });
+  expect(response.ok(), await response.text()).toBe(true);
+  const replies: string[] = await response.json();
+  expect(replies).toHaveLength(1);
+  return replies[0];
 }
 
 async function bind(request: APIRequestContext, userId: number, jwt: string) {
-  const response = await request.post(`${WORKER_URL}/telegram/bind_address`, {
-    data: { initData: initData(userId), jwt },
-  });
-  expect(response.ok(), await response.text()).toBe(true);
+  expect(await command(request, userId, `/bind ${jwt}`)).toMatch(/^绑定成功:\n/);
 }
 
-async function unbind(request: APIRequestContext, userId: number, address: string, status = 200) {
-  const response = await request.post(`${WORKER_URL}/telegram/unbind_address`, {
-    data: { initData: initData(userId), address },
-  });
-  expect(response.status(), await response.text()).toBe(status);
+async function unbind(
+  request: APIRequestContext, userId: number, address: string, outcome: 'unbound' | 'refused' = 'unbound',
+) {
+  const reply = await command(request, userId, `/unbind ${address}`);
+  if (outcome === 'unbound') expect(reply).toBe(`解绑成功:\n地址: ${address}`);
+  else expect(reply).toMatch(/^解绑失败: /);
 }
 
 async function addressList(request: APIRequestContext, userId: number) {
-  const response = await request.post(`${WORKER_URL}/telegram/get_bind_address`, {
-    data: { initData: initData(userId) },
-  });
-  expect(response.ok(), await response.text()).toBe(true);
-  return response.json();
+  const [heading, ...lines] = (await command(request, userId, '/address')).split('\n');
+  expect(heading).toBe('地址列表:');
+  return lines.filter(Boolean).map(line => line.replace(/^地址: /, ''));
 }
 
 async function expectPushOwner(request: APIRequestContext, address: string, userId: number | null) {
@@ -51,7 +46,7 @@ test('Telegram users can remove their own bindings after another user binds the 
   const other = owner + 1;
   try {
     await bind(request, owner, mailbox.jwt);
-    await unbind(request, other, mailbox.address, 400);
+    await unbind(request, other, mailbox.address, 'refused');
     await expectPushOwner(request, mailbox.address, owner);
     await unbind(request, owner, mailbox.address);
     await expectPushOwner(request, mailbox.address, null);
@@ -61,7 +56,7 @@ test('Telegram users can remove their own bindings after another user binds the 
     await expectPushOwner(request, mailbox.address, other);
     await unbind(request, owner, mailbox.address);
     expect(await addressList(request, owner)).toEqual([]);
-    expect(await addressList(request, other)).toEqual([{ address: mailbox.address, jwt: mailbox.jwt }]);
+    expect(await addressList(request, other)).toEqual([mailbox.address]);
     await expectPushOwner(request, mailbox.address, other);
     await unbind(request, other, mailbox.address);
     expect(await addressList(request, other)).toEqual([]);
@@ -70,7 +65,7 @@ test('Telegram users can remove their own bindings after another user binds the 
     await bind(request, owner, mailbox.jwt);
     await bind(request, other, mailbox.jwt);
     await bind(request, owner, mailbox.jwt);
-    expect(await addressList(request, owner)).toEqual([{ address: mailbox.address, jwt: mailbox.jwt }]);
+    expect(await addressList(request, owner)).toEqual([mailbox.address]);
     await expectPushOwner(request, mailbox.address, owner);
     await unbind(request, other, mailbox.address);
     await expectPushOwner(request, mailbox.address, owner);
@@ -98,19 +93,14 @@ test('stale Telegram credentials cannot unbind; internal mailbox cleanup still w
   const recreated = await creation.json();
   try {
     expect(recreated.address_id).not.toBe(original.address_id);
-    await unbind(request, owner, recreated.address, 400);
+    await unbind(request, owner, recreated.address, 'refused');
     await expectPushOwner(request, recreated.address, owner);
     const response = await request.delete(`${WORKER_URL}/api/delete_address`, {
       headers: { Authorization: `Bearer ${recreated.jwt}` },
     });
     expect(response.ok(), await response.text()).toBe(true);
     await expectPushOwner(request, recreated.address, null);
-
-    const listing = await request.post(`${WORKER_URL}/telegram/get_bind_address`, {
-      data: { initData: initData(owner) },
-    });
-    expect(listing.ok()).toBe(true);
-    expect(await listing.json()).toEqual([]);
+    expect(await addressList(request, owner)).toEqual([]);
   } finally {
     await request.delete(`${WORKER_URL}/admin/delete_address/${recreated.address_id}`);
   }
@@ -135,7 +125,7 @@ test('Telegram unbind accepts a current credential after a stale credential for 
     await bind(request, owner, recreated.jwt);
     await unbind(request, owner, recreated.address);
     await expectPushOwner(request, recreated.address, null);
-    expect(await addressList(request, owner)).toEqual([{ address: unrelated.address, jwt: unrelated.jwt }]);
+    expect(await addressList(request, owner)).toEqual([unrelated.address]);
     await expectPushOwner(request, unrelated.address, owner);
   } finally {
     for (const mailbox of [recreated, unrelated]) {

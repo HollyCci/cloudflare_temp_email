@@ -25,7 +25,7 @@ features:
   - title: Email parsing using Rust WASM
     details: Parse emails with Rust WASM, support various RFC email standards, support attachments, extremely fast
   - title: Telegram Bot and Webhook support
-    details: Forward emails to Telegram or webhook, Telegram Bot supports mailbox binding, view emails, Telegram Mini App
+    details: Forward emails to Telegram or webhook, Telegram Bot supports mailbox binding, view emails
   - title: Send emails (UI/API/SMTP)
     details: Send txt or html emails via domain mailboxes, DKIM signature support, send via UI/API/SMTP
 ---

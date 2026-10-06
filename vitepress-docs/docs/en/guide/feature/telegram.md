@@ -91,39 +91,11 @@ Set `ENABLE_TG_PUSH_ATTACHMENT = true` to enable sending email attachments via T
 - Multiple attachments are sent in batches via `sendMediaGroup`, up to 6 per batch
 - The first attachment includes the sender and subject as caption
 
-## Mini App
+## Mini App (Removed)
 
-Can be deployed via command line or UI interface
+The Telegram Mini App has been removed. The frontend has had no Mini App pages since the React rewrite in v1.13.0, and the Worker's Mini App API (`/telegram/get_bind_address` and related endpoints) and the "View Mail" button on mail messages are now removed as well. Bot commands and mail push are unaffected.
 
-### UI Deployment
+If you deployed the Mini App before, you can:
 
-For other steps, refer to `Frontend and Backend Separation Deployment` in [UI Deployment](/en/guide/cli/pages)
-
-> [!NOTE]
-> Download the zip from here, [telegram-frontend.zip](https://github.com/dreamhunter2333/cloudflare_temp_email/releases/latest/download/telegram-frontend.zip)
->
-> Modify the index-xxx.js file in the zip, where xx is a random string
->
-> Search for `https://temp-email-api.xxx.xxx`, replace it with your worker domain, then deploy the new zip file
-
-### Command Line Deployment
-
-```bash
-cd frontend
-pnpm install
-cp .env.example .env.prod
-# Edit .env.prod and set VITE_IS_TELEGRAM=true
-# --project-name can create a separate pages for mini app, you can also share one pages, but may encounter js loading issues
-pnpm run deploy:telegram --project-name=<your_project_name>
-```
-
-> [!WARNING]
-> Windows users: The inline `VITE_IS_TELEGRAM=true` environment variable in npm scripts does not work on Windows.
-> Please set `VITE_IS_TELEGRAM=true` in your `.env.prod` file manually, then use the regular build command instead:
-> ```bash
-> pnpm run build
-> ```
-
-- After deployment, please fill in the web URL in the `Settings` -> `Telegram Mini App` page `Telegram Mini App URL` in the admin backend.
-- Please execute `/setmenubutton` in `@BotFather`, then enter your web address to set the `Open App` button in the lower left corner.
-- Please execute `/newapp` in `@BotFather` to create a new app and register the mini app.
+- Delete the Pages project created for the Mini App, and the `TG_FRONTEND_NAME` and `USE_WORKER_ASSETS_WITH_TELEGRAM` secrets in GitHub Actions
+- Remove the Mini App entry you configured with `/setmenubutton` or `/newapp` in `@BotFather`

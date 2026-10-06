@@ -36,8 +36,13 @@ VITE_API_BASE=https://temp-email-api.example.com
 | --- | --- | --- | --- | --- | --- |
 | `VITE_API_BASE` | `API_BASE` | 视部署方式 | 文本 | 空 | 以 `https://` 开头的后端 API 根地址，不要带结尾 `/`；空值表示使用同域 API |
 | `VITE_CF_WEB_ANALY_TOKEN` | `CF_WEB_ANALY_TOKEN` | 否 | 文本 | 空 | Cloudflare Web Analytics Token |
-| `VITE_IS_TELEGRAM` | `IS_TELEGRAM` | 否 | 布尔值 | `false` | 是否启用 Telegram Mini App，详见 [Telegram 配置](/zh/guide/feature/telegram) |
-| `VITE_GOOGLE_AD_CLIENT` | `GOOGLE_AD_CLIENT` | 否 | 文本 | 空 | Google AdSense Client ID，详见 [Google Ads 配置](/zh/guide/feature/google-ads) |
-| `VITE_GOOGLE_AD_SLOT` | `GOOGLE_AD_SLOT` | 否 | 文本 | 空 | Google AdSense Slot ID，详见 [Google Ads 配置](/zh/guide/feature/google-ads) |
 
-自 v1.13.0 起前端界面固定为中文，不再读取 `VITE_DEFAULT_LANG`（`app-config` 中的 `DEFAULT_LANG`），旧配置中的这一项可以删除。[Worker 变量](/zh/guide/worker-vars) 中的 `DEFAULT_LANG` 是另一项设置，不受影响。
+## 已移除的变量
+
+以下变量自 v1.13.0 起前端不再读取，设置了也没有效果，可以从旧配置（ENV 或 `app-config`）中删除：
+
+| ENV 变量 | `app-config` 字段 | 说明 |
+| --- | --- | --- |
+| `VITE_DEFAULT_LANG` | `DEFAULT_LANG` | 前端界面固定为中文。[Worker 变量](/zh/guide/worker-vars) 中的 `DEFAULT_LANG` 是另一项设置，不受影响 |
+| `VITE_IS_TELEGRAM` | `IS_TELEGRAM` | Telegram 小程序已移除，Bot 命令与邮件推送不受影响，见 [Telegram Bot](/zh/guide/feature/telegram) |
+| `VITE_GOOGLE_AD_CLIENT`、`VITE_GOOGLE_AD_SLOT` | `GOOGLE_AD_CLIENT`、`GOOGLE_AD_SLOT` | Google 广告已移除 |
