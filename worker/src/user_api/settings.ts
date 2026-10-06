@@ -1,6 +1,5 @@
 import { Context } from "hono";
 
-import i18n from "../i18n";
 import { UserOauth2Settings, UserSettings } from "../models";
 import { getJsonSetting, getAdminRole } from "../utils"
 import { CONSTANTS } from "../constants";
@@ -31,17 +30,10 @@ export default {
         })
     },
     settings: async (c: Context<HonoCustomType>) => {
+        // applyUserIdentity has matched the token to a live account
         const user = c.get("userPayload");
-        const msgs = i18n.getMessagesbyContext(c);
-        // check if user exists
-        const db_user = await c.env.DB.prepare(
-            `SELECT id, user_email FROM users where id = ?`
-        ).bind(user.user_id).first<{ id: number, user_email: string }>();
-        if (!db_user) {
-            return c.text(msgs.UserNotFoundMsg, 400);
-        }
-        await ensureBootstrapAdminRole(c, db_user.id, db_user.user_email);
-        const user_role = await commonGetUserRole(c, db_user.id);
+        await ensureBootstrapAdminRole(c, user.user_id, user.user_email);
+        const user_role = await commonGetUserRole(c, user.user_id);
         const is_admin = getAdminRole(c) === user_role?.role;
         const access_token = user_role?.role ? await Jwt.sign({
             user_email: user.user_email,

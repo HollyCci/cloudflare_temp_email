@@ -48,17 +48,22 @@ for (const scenario of ['expired role', 'valid role', 'invalid signature', 'miss
   });
 }
 
-test('generic authentication errors preserve their text messages and CORS headers', async ({ request }) => {
-  for (const { path, message } of [
-    { path: '/api/settings', message: 'Invalid address credential' },
-    { path: '/user_api/settings', message: 'Your token has expired, please login again' },
-  ]) {
-    const response = await request.get(`${WORKER_URL}${path}`, { headers: { 'x-lang': 'en' } });
-    expect(response.status()).toBe(401);
-    expect(response.headers()['content-type']).toContain('text/plain');
-    expect(response.headers()['access-control-allow-origin']).toBe('*');
-    expect(await response.text()).toBe(message);
-  }
+test('authentication errors keep their CORS headers', async ({ request }) => {
+  const mailbox = await request.get(`${WORKER_URL}/api/settings`, { headers: { 'x-lang': 'en' } });
+  expect(mailbox.status()).toBe(401);
+  expect(mailbox.headers()['content-type']).toContain('text/plain');
+  expect(mailbox.headers()['access-control-allow-origin']).toBe('*');
+  expect(await mailbox.text()).toBe('Invalid address credential');
+
+  // an account error is structured, so that the frontend can sign the account out
+  const account = await request.get(`${WORKER_URL}/user_api/settings`, { headers: { 'x-lang': 'en' } });
+  expect(account.status()).toBe(401);
+  expect(account.headers()['content-type']).toContain('application/json');
+  expect(account.headers()['access-control-allow-origin']).toBe('*');
+  expect(await account.json()).toEqual({
+    code: 'AUTH_USER_TOKEN_INVALID',
+    message: 'Your sign-in is no longer valid, please sign in again',
+  });
 });
 
 test('uncaught server errors return JSON with the original error detail', async ({ request }) => {

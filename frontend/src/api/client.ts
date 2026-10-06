@@ -61,6 +61,7 @@ const apiFetch = async (path: string, options: FetchOptions = {}) => {
       headers,
     })
     const response = await interceptResponse(path, initialResponse)
+    if (ErrorCode.isUserTokenError(response) && userTokenHeader) session.signOutAccount(userTokenHeader)
     if (ErrorCode.isSiteAuthError(response)) session.setShowAuth(true)
     if (response.status >= 300) {
       throw new Error(`[${response.status}]: ${response.data?.message || response.data}`)
@@ -157,8 +158,8 @@ export const api = {
     if (!session.userJwt) return
     await apiFetch('/user_api/bind_address', { method: 'POST', jwt })
   },
-  async listBoundAddresses(): Promise<{ results?: BoundAddress[] }> {
-    return await apiFetch('/user_api/bind_address?limit=50&offset=0', { showLoading: false })
+  async listBoundAddresses(userJwt?: string): Promise<{ results?: BoundAddress[] }> {
+    return await apiFetch('/user_api/bind_address?limit=50&offset=0', { showLoading: false, userJwt })
   },
   async openBoundAddress(id: number): Promise<{ jwt?: string }> {
     return await apiFetch(`/user_api/bind_address_jwt/${id}`, { showLoading: false })

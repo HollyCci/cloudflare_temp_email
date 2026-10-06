@@ -5,7 +5,7 @@ const messages: LocaleMessages = {
     InvalidMailIdMsg: "Invalid mail ID",
     MailNotFoundMsg: "Mail not found",
     CustomAuthPasswordMsg: "You have enabled the private site password, please provide the password",
-    UserTokenExpiredMsg: "Your token has expired, please login again",
+    UserTokenInvalidMsg: "Your sign-in is no longer valid, please sign in again",
     UserAcceesTokenExpiredMsg: "Your access token has expired, please refresh the page",
     UserRoleIsNotAdminMsg: "Your user role is not admin, no access to visit this page",
     AdminLoginRequiredMsg: "Sign in with an admin account to access this page",

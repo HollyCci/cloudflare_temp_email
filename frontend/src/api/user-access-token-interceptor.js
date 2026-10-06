@@ -25,6 +25,8 @@ async function loadUserSettings(token, client, headers) {
   const refreshHeaders = new AxiosHeaders(headers)
   refreshHeaders.delete('x-user-access-token')
   const response = await client.get('/user_api/settings', { headers: refreshHeaders })
+  // no account left to issue a replacement: sign it out rather than carry on without it
+  if (ErrorCode.isUserTokenError(response)) session.signOutAccount(token)
   if (response.status >= 300) {
     throw new Error(`[${response.status}]: ${response.data?.message || response.data}`)
   }

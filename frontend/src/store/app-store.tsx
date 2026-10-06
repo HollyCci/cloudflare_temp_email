@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -11,6 +12,7 @@ import { toast } from '@heroui/react'
 import { api } from '../api/client'
 import { session, emptyOpenSettings, emptyUserSettings } from './session'
 import { createMailboxSwitchController } from './mailbox-switch'
+import { safeHeaderValue } from '../utils/headers'
 import type { AddressSettings, BoundAddress, OpenSettings, UserOpenSettings, UserSettings } from './types'
 import {
   DEFAULT_LOCALE,
@@ -67,6 +69,10 @@ type AppState = {
   setAddresses: (value: BoundAddress[]) => void
   addressesFetched: boolean
   setAddressesFetched: (value: boolean) => void
+  /** Why the last account load failed; empty once a load succeeds. */
+  addressesError: string
+  /** Loads the account's settings and bound mailboxes. A load already running for the account is shared. */
+  loadAccount: () => Promise<void>
   switchingAddress: string
   addressOpenFailed: boolean
   /** Bumped whenever a mailbox JWT is applied, so the inbox reloads even if the JWT is unchanged. */
@@ -104,6 +110,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   })
   const [addresses, setAddresses] = useState<BoundAddress[]>([])
   const [addressesFetched, setAddressesFetched] = useState(() => !readRaw('userJwt'))
+  const [addressesError, setAddressesError] = useState('')
+  // The account token in use right now; `session` and state only catch up on the next render.
+  const userJwtRef = useRef(userJwt)
+  const accountLoad = useRef<{ token: string; promise: Promise<void> } | null>(null)
   const [switchingAddress, setSwitchingAddressState] = useState('')
   const [addressOpenFailed, setAddressOpenFailed] = useState(false)
   const [inboxEpoch, setInboxEpoch] = useState(0)
@@ -158,6 +168,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setSwitchingAddressState('')
   }, [mailboxSwitch])
   const setUserJwt = useCallback((value: string) => {
+    userJwtRef.current = value
     setUserJwtState(value)
     writeRaw('userJwt', value)
   }, [])
@@ -168,6 +179,44 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const setUserSettings = useCallback((value: Partial<UserSettings>) => {
     setUserSettingsState((current) => ({ ...current, ...value }))
   }, [])
+  // The worker refused this account token: sign the account out. An open mailbox has its own
+  // credential and stays open.
+  const signOutAccount = useCallback((token: string) => {
+    if (safeHeaderValue(userJwtRef.current) !== token) return
+    setUserJwt('')
+    setUserSettingsState({ ...emptyUserSettings })
+    setAddresses([])
+    setAddressesError('')
+    setAddressesFetched(true)
+  }, [setUserJwt])
+  const loadAccount = useCallback(() => {
+    const token = userJwtRef.current
+    if (!token) return Promise.resolve()
+    if (accountLoad.current?.token === token) return accountLoad.current.promise
+    const current = () => userJwtRef.current === token
+    setAddressesFetched(false)
+    setAddressesError('')
+    // The token is passed explicitly: this runs from child effects, before `session` is synced.
+    const promise = (async () => {
+      try {
+        const settings = await api.getUserSettings(token)
+        if (settings && current()) setUserSettings({ ...settings, fetched: true })
+        const res = await api.listBoundAddresses(token)
+        if (current()) setAddresses(res.results || [])
+      } catch (error: any) {
+        // A refused token has already signed the account out, and the message says why;
+        // a failure that belongs to an account replaced meanwhile is not shown.
+        if (userJwtRef.current && !current()) return
+        if (current()) setAddressesError(error.message)
+        toast(error.message, { variant: 'danger' })
+      } finally {
+        if (current()) setAddressesFetched(true)
+        if (accountLoad.current?.token === token) accountLoad.current = null
+      }
+    })()
+    accountLoad.current = { token, promise }
+    return promise
+  }, [setUserSettings])
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
@@ -187,9 +236,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     session.setUserSettings = setUserSettings
     session.setShowAuth = setShowAuth
     session.setLoading = setLoading
+    session.signOutAccount = signOutAccount
   }, [
     locale, jwt, userJwt, auth, userSettings, openSettings,
-    showAuth, loading, setUserSettings,
+    showAuth, loading, setUserSettings, signOutAccount,
   ])
 
   const showAdminPage = Boolean(userJwt && userSettings.is_admin)
@@ -200,14 +250,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     loading, setLoading, showAuth, setShowAuth,
     openSettings, setOpenSettings, userOpenSettings, setUserOpenSettings,
     userSettings, setUserSettings, addressSettings, setAddressSettings,
-    addresses, setAddresses, addressesFetched, setAddressesFetched,
+    addresses, setAddresses, addressesFetched, setAddressesFetched, addressesError, loadAccount,
     switchingAddress, addressOpenFailed, inboxEpoch, openMailbox,
     finishAddressSwitch, invalidateAddressSwitch, showAdminPage,
   }), [
     locale, setLocale, theme, toggleTheme, jwt, setJwt, userJwt, setUserJwt,
     auth, setAuth, loading, showAuth,
     openSettings, userOpenSettings, userSettings, setUserSettings,
-    addressSettings, addresses, addressesFetched, switchingAddress, addressOpenFailed,
+    addressSettings, addresses, addressesFetched, addressesError, loadAccount, switchingAddress, addressOpenFailed,
     inboxEpoch, openMailbox, finishAddressSwitch, invalidateAddressSwitch, showAdminPage,
   ])
 

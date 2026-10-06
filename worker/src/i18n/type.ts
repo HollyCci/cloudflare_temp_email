@@ -3,7 +3,7 @@ export type LocaleMessages = {
     InvalidMailIdMsg: string
     MailNotFoundMsg: string
     CustomAuthPasswordMsg: string
-    UserTokenExpiredMsg: string
+    UserTokenInvalidMsg: string
     UserAcceesTokenExpiredMsg: string
     UserRoleIsNotAdminMsg: string
     AdminLoginRequiredMsg: string

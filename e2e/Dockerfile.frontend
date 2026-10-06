@@ -45,11 +45,16 @@ config.server = {\
     "/health_check": { target: workerTarget, changeOrigin: true },\
   },\
 };\
+config.preview = config.server;\
 export default config;' > vite.config.js
 
 # Empty VITE_API_BASE so frontend uses same-origin (proxied through Vite)
 ENV VITE_API_BASE=
 
+# Test the production build: the dev server runs every effect twice (StrictMode), which hides
+# ordering bugs that only exist in what ships.
+RUN pnpm exec vite build
+
 EXPOSE 5173
 
-CMD ["pnpm", "exec", "vite", "--port", "5173", "--host", "0.0.0.0"]
+CMD ["pnpm", "exec", "vite", "preview", "--port", "5173", "--host", "0.0.0.0"]

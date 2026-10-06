@@ -15,12 +15,17 @@
 - fix: |鉴权| `/user_api/bind_address` 在邮箱凭证缺失或格式错误时返回 500 而非 401：`addressJwtAuth` 以抛异常表达凭证无效，只有 `/api/*` 用 try/catch 接住了。现在它直接返回 401，`/api/*` 的 try/catch 一并删除——校验邮箱凭证时的数据库错误不再被伪装成「凭证无效」
 - fix: |Frontend| `index.html` 的运行时配置 `app-config` 写死了生产 API 地址，而运行时配置优先于构建变量，本地开发、e2e 等所有非生产构建都直连了生产 API。恢复为空配置，API 地址回到 `VITE_API_BASE`
 - fix: |e2e| browser 测试恢复可运行：前端镜像构建时用 `HEROUI_SETUP_KEY` 拉取 HeroUI Pro 产物，CI 配置该 secret 后自动启用 browser 项目（超时放宽到 20 分钟）；e2e 前端的 Vite 代理以 `/admin` 为前缀匹配，打开 `/admin` 页面直接得到 Worker 的 401 JSON，改为与 `pages/functions/_middleware.js` 一致、以 `/` 结尾的前缀
+- fix: |鉴权| **安全**：删除账户后，它的用户 id 会被下一个注册的账户复用（`users.id` 没有 AUTOINCREMENT），而删除只清了账户本身和地址绑定——新账户会继承被删账户的角色（包括管理员角色）和 Passkey，被删账户手里的令牌也会被当成新账户的身份，`/user_api/settings` 还会为它续签。现在账户令牌必须对应一个 id 与邮箱都吻合的现存账户；删除账户时在同一批次里清掉它的绑定、角色和 Passkey。已有部署请执行一次 `db/2026-10-06-user-orphans.sql`，清理此前删除账户留下的数据
+- fix: |鉴权| **行为变更**：无法使用的账户令牌（过期、伪造、账户已删除）统一返回 401 JSON `AUTH_USER_TOKEN_INVALID`（此前是纯文本 401，已删除的账户则是 400）。前端据此登出账户并提示原因；正在打开的邮箱有自己的凭证，保持打开
+- fix: |Frontend| 生产构建刷新页面后不加载账户设置：启动加载在 store 同步 `session` 之前运行，`getUserSettings()` 读不到令牌便直接返回、不发请求，角色和管理入口要等进过一次账户页才出现（开发模式下 effect 执行两次，掩盖了这个问题）。现在由 store 加载账户并显式传入令牌
+- fix: |Frontend| 启动时的账户加载不再吞掉错误：加载失败显示「账户加载失败」并可重试，不再显示成「还没有邮箱」
 
 ### Testing
 
 - test: |e2e| browser 用例按 React + HeroUI 重写：收件箱、打开即已读、管理端访问控制、自定义子域名、账户页新建邮箱的归属；尚未移植的功能（发信、回复、Passkey、兑换码、Webhook、数据库容量、地址分页）的用例暂时跳过
 - test: |Frontend| 新增 API 客户端单测，覆盖访问令牌替换（含同时到达与晚到的拒绝、刷新失败、会话切换）、站点密码弹窗与绑定凭证，取代依赖 Vue 模块、已无法运行的 browser 用例
 - test: |e2e| 绑定接口「已删除邮箱凭证」的断言此前因账户令牌缺 `user_email`，先在账户校验处失败，实际没有测到邮箱凭证；改用有效账户令牌，并新增缺失/格式错误的邮箱凭证一律 401 的用例
+- test: |e2e| browser 测试改为针对生产构建运行（`vite build` + `vite preview`），开发服务器的 StrictMode 双重执行不再掩盖时序问题；新增账户失效登出、账户加载失败后重试的 browser 用例，以及账户令牌校验与 id 复用的 API 用例
 
 ## v1.13.0
 
