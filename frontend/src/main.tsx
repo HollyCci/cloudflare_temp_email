@@ -65,14 +65,12 @@ function AppRoutes() {
       <Route path="/" element={<InboxPage />} />
       <Route path="/user" element={<UserPage />} />
       <Route path="/admin" element={<AdminPage />} />
-      <Route path="/telegram_mail" element={<InboxPage />} />
       <Route path="/en" element={<Navigate replace to="/" />} />
       <Route path="/zh" element={<Navigate replace to="/" />} />
       <Route path="/en/user" element={<Navigate replace to="/user" />} />
       <Route path="/zh/user" element={<Navigate replace to="/user" />} />
       <Route path="/en/admin" element={<Navigate replace to="/admin" />} />
       <Route path="/zh/admin" element={<Navigate replace to="/admin" />} />
-      <Route path="/en/telegram_mail" element={<Navigate replace to="/telegram_mail" />} />
       <Route path="*" element={<Navigate replace to="/" />} />
     </Routes>
   )

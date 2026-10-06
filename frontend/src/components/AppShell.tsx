@@ -140,7 +140,7 @@ function MailSidebar({
 }) {
   const { t, locale } = useI18n()
   const navigate = useNavigate()
-  const inInbox = currentPath === '/' || currentPath === '/telegram_mail'
+  const inInbox = currentPath === '/'
   const items = [
     ...(signedIn ? [] : [{ href: withLocale('/', locale), icon: Tray, id: 'inbox', label: t('inbox'), current: inInbox }]),
     { href: withLocale('/user', locale), icon: Person, id: 'account', label: t('account'), current: currentPath === '/user' },

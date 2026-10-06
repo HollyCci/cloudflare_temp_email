@@ -155,7 +155,7 @@ const generate = async () => {
     </script>
     ```
 
-    `API_BASE` is the backend API root URL without a trailing `/`. You can also set `CF_WEB_ANALY_TOKEN`, `IS_TELEGRAM`, `GOOGLE_AD_CLIENT`, and `GOOGLE_AD_SLOT`; see [Frontend Variables](/en/guide/frontend-vars) for their purpose and values. Fields present in `app-config` override the corresponding settings built into JavaScript, while omitted fields keep their existing settings.
+    `API_BASE` is the backend API root URL without a trailing `/`. You can also set `CF_WEB_ANALY_TOKEN`; see [Frontend Variables](/en/guide/frontend-vars) for its purpose and values. Fields present in `app-config` override the corresponding settings built into JavaScript, while omitted fields keep their existing settings.
 
 4. Select `Pages`, click `Create Pages`, modify the name, upload the downloaded zip package
 

@@ -91,39 +91,11 @@ Telegram Bot 支持 **每用户独立推送**，用户绑定地址后，该地�
 - 多附件通过 `sendMediaGroup` 批量发送，每批最多 6 个
 - 第一个附件会附带邮件发件人和主题信息作为 caption
 
-## Mini App
+## Mini App（已移除）
 
-可以通过命令行部署，或者 UI 界面部署
+Telegram 小程序已移除：v1.13.0 换成 React 前端后就没有小程序页面了，现在 Worker 的小程序接口（`/telegram/get_bind_address` 等）和邮件消息里的「查看邮件」按钮也一并删除。Bot 命令和邮件推送不受影响。
 
-### UI 部署
+之前部署过小程序的话，可以：
 
-其他步骤参考 [UI 部署](/zh/guide/cli/pages) 中的 `前后端分离部署`
-
-> [!NOTE]
-> 从这里下载 zip, [telegram-frontend.zip](https://github.com/dreamhunter2333/cloudflare_temp_email/releases/latest/download/telegram-frontend.zip)
->
-> 修改压缩包里面的 index-xxx.js 文件 ，xx 是随机的字符串
->
-> 搜索 `https://temp-email-api.xxx.xxx` ，替换成你worker 的域名，然后部署新的zip文件
-
-### 命令行部署
-
-```bash
-cd frontend
-pnpm install
-cp .env.example .env.prod
-# 修改 .env.prod 文件，设置 VITE_IS_TELEGRAM=true
-# --project-name 可以单独为 mini app 创建一个 pages, 你也可以公用一个 pages，但是可能遇到 js 加载不了的问题
-pnpm run deploy:telegram --project-name=<你的项目名称>
-```
-
-> [!WARNING]
-> Windows 用户请注意：`npm scripts` 中的 `VITE_IS_TELEGRAM=true` 内联环境变量写法在 Windows 上不生效。
-> 请在 `.env.prod` 文件中手动设置 `VITE_IS_TELEGRAM=true`，然后使用普通的 build 命令代替：
-> ```bash
-> pnpm run build
-> ```
-
-- 部署完成后，请在 admin 后台的 `设置` -> `电报小程序` 页面 `电报小程序 URL` 中填写网页 URL。
-- 请在 `@BotFather` 处执行 `/setmenubutton`，然后输入你的网页地址，设置左下角的 `Open App` 按钮。
-- 请在 `@BotFather` 处执行 `/newapp` 新建 app 来注册 mini app。
+- 删除单独为小程序创建的 Pages 项目，以及 GitHub Actions 中的 `TG_FRONTEND_NAME`、`USE_WORKER_ASSETS_WITH_TELEGRAM` Secret
+- 在 `@BotFather` 中移除之前通过 `/setmenubutton`、`/newapp` 配置的小程序入口

@@ -360,25 +360,15 @@ export function newTelegramBot(c: Context<HonoCustomType>, token: string): Teleg
             queryAddress, mailIndex
         ).first<RawMailRow>();
         const raw = mailRow ? await resolveRawEmail(mailRow) : undefined;
-        const mailId = mailRow?.id;
         const created_at = mailRow?.created_at;
         const { mail } = raw
             ? await parseMail(msgs, { rawEmail: raw }, queryAddress, created_at, mailRow?.metadata)
             : { mail: msgs.TgNoMoreMailsMsg };
-        const settings = await c.env.KV.get<TelegramSettings>(CONSTANTS.TG_KV_SETTINGS_KEY, "json");
-        const miniAppButtons = []
-        if (settings?.miniAppUrl && settings?.miniAppUrl?.length > 0 && mailId) {
-            const url = new URL(settings.miniAppUrl);
-            url.pathname = "/telegram_mail"
-            url.searchParams.set("mail_id", mailId);
-            miniAppButtons.push(Markup.button.webApp(msgs.TgViewMailBtnMsg, url.toString()));
-        }
         if (edit) {
             return await ctx.editMessageText(mail || msgs.TgNoMailMsg,
                 {
                     ...Markup.inlineKeyboard([
                         Markup.button.callback(msgs.TgPrevBtnMsg, `mail_${queryAddress}_${mailIndex - 1}`, mailIndex <= 0),
-                        ...miniAppButtons,
                         Markup.button.callback(msgs.TgNextBtnMsg, `mail_${queryAddress}_${mailIndex + 1}`, !raw),
                     ])
                 },
@@ -388,7 +378,6 @@ export function newTelegramBot(c: Context<HonoCustomType>, token: string): Teleg
             {
                 ...Markup.inlineKeyboard([
                     Markup.button.callback(msgs.TgPrevBtnMsg, `mail_${queryAddress}_${mailIndex - 1}`, mailIndex <= 0),
-                    ...miniAppButtons,
                     Markup.button.callback(msgs.TgNextBtnMsg, `mail_${queryAddress}_${mailIndex + 1}`, !raw),
                 ])
             },
@@ -467,7 +456,6 @@ const parseMail = async (
 export async function sendMailToTelegram(
     c: Context<HonoCustomType>, address: string,
     parsedEmailContext: ParsedEmailContext,
-    message_id: string | null,
     aiExtract?: ExtractResult | null
 ) {
     if (!c.env.TELEGRAM_BOT_TOKEN || !c.env.KV) {
@@ -479,9 +467,6 @@ export async function sendMailToTelegram(
     if (!userId && !globalPush) {
         return;
     }
-    const mailId = await c.env.DB.prepare(
-        `SELECT id FROM raw_mails where address = ? and message_id = ?`
-    ).bind(address, message_id).first<string>("id");
     const bot = newTelegramBot(c, c.env.TELEGRAM_BOT_TOKEN);
 
     const buildAndSend = async (targetUserId: string, msgs: LocaleMessages) => {
@@ -490,16 +475,7 @@ export async function sendMailToTelegram(
         );
         if (!mail) return;
         const attachments = parsedEmailContext.parsedEmail?.attachments || [];
-        const buttons = [];
-        if (settings?.miniAppUrl && mailId) {
-            const url = new URL(settings.miniAppUrl);
-            url.pathname = "/telegram_mail"
-            url.searchParams.set("mail_id", mailId);
-            buttons.push(Markup.button.webApp(msgs.TgViewMailBtnMsg, url.toString()));
-        }
-        await bot.telegram.sendMessage(targetUserId, mail, {
-            ...Markup.inlineKeyboard([...buttons])
-        });
+        await bot.telegram.sendMessage(targetUserId, mail);
         // send attachments via native fetch (telegraf multipart upload is incompatible with CF Workers)
         if (getBooleanValue(c.env.ENABLE_TG_PUSH_ATTACHMENT) && attachments.length > 0) {
             const caption = `From: ${parsedEmailContext.parsedEmail?.sender || ""}\nSubject: ${parsedEmailContext.parsedEmail?.subject || ""}`;

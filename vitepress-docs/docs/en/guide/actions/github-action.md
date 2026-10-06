@@ -48,7 +48,6 @@ Then go to the repository page `Settings` -> `Secrets and variables` -> `Actions
    | `FRONTEND_NAME`    | The project name you created in Cloudflare Pages, can be created via [UI](https://temp-mail-docs.awsl.uk/en/guide/ui/pages.html) or [Command Line](https://temp-mail-docs.awsl.uk/en/guide/cli/pages.html) |
    | `FRONTEND_BRANCH`  | (Optional) Branch for pages deployment, can be left unconfigured, defaults to `production`                                                                                      |
    | `PAGE_TOML`        | (Optional) Used only by the `Deploy Frontend with page function` workflow. Required when using page functions to forward backend requests. Please copy the content from `pages/wrangler.toml` and modify the `service` field to your worker backend name according to actual situation. This workflow builds the frontend in Pages mode and uses same-origin requests, so it does not read `FRONTEND_ENV` |
-   | `TG_FRONTEND_NAME` | (Optional) The project name you created in Cloudflare Pages, same as `FRONTEND_NAME`. Fill this in if you need Telegram Mini App functionality                                  |
 
 ### Deploy
 

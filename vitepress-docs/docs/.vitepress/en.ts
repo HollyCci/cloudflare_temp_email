@@ -171,7 +171,6 @@ function sidebarGuide(): DefaultTheme.SidebarItem[] {
                 { text: 'Configure WASM Email Parser', link: 'feature/mail_parser_wasm_worker' },
                 { text: 'Enhance with Other Workers', link: 'feature/another-worker-enhanced' },
                 { text: 'Configure Redemption Codes', link: 'feature/redeem-code' },
-                { text: 'Add Google Ads', link: 'feature/google-ads.md' },
             ]
         },
         {

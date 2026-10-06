@@ -22,17 +22,7 @@ const getStringConfigValue = (key: string, buildValue: string): string => {
   return typeof runtimeValue === 'string' ? runtimeValue : buildValue
 }
 
-const getTelegramConfigValue = (buildValue: string): string | boolean => {
-  const runtimeValue = runtimeConfig.IS_TELEGRAM
-  return typeof runtimeValue === 'string' || typeof runtimeValue === 'boolean'
-    ? runtimeValue
-    : buildValue
-}
-
 export const APP_CONFIG = {
   API_BASE: getStringConfigValue('API_BASE', import.meta.env.VITE_API_BASE || ''),
   CF_WEB_ANALY_TOKEN: getStringConfigValue('CF_WEB_ANALY_TOKEN', import.meta.env.VITE_CF_WEB_ANALY_TOKEN || ''),
-  IS_TELEGRAM: getTelegramConfigValue(import.meta.env.VITE_IS_TELEGRAM || ''),
-  GOOGLE_AD_CLIENT: getStringConfigValue('GOOGLE_AD_CLIENT', import.meta.env.VITE_GOOGLE_AD_CLIENT || ''),
-  GOOGLE_AD_SLOT: getStringConfigValue('GOOGLE_AD_SLOT', import.meta.env.VITE_GOOGLE_AD_SLOT || ''),
 } as const

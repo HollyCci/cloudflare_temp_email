@@ -142,13 +142,12 @@
 
 - [x] 前后台均支持多语言
 - [x] 现代化 UI 设计，支持响应式布局
-- [x] 支持 Google Ads 集成
 - [x] 使用 shadow DOM 防止样式污染
 - [x] 支持 URL JWT 参数自动登录
 
 ### 集成与扩展
 
-- [x] 完整的 `Telegram Bot` 支持，以及 `Telegram` 推送，Telegram Bot 小程序
+- [x] 完整的 `Telegram Bot` 支持，以及 `Telegram` 推送
 - [x] 添加 `SMTP proxy server`，支持 `SMTP` 发送邮件，`IMAP` 查看邮件
 - [x] Webhook 支持，消息推送集成
 - [x] 支持 `CF Turnstile` 人机验证
