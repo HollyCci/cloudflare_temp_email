@@ -19,6 +19,7 @@
 ### Improvements
 
 - docs: |文档| 删除前端变量 `VITE_IS_TELEGRAM`、`VITE_GOOGLE_AD_CLIENT`、`VITE_GOOGLE_AD_SLOT`（`app-config` 中的 `IS_TELEGRAM`、`GOOGLE_AD_CLIENT`、`GOOGLE_AD_SLOT`）：v1.13.0 换成 React 前端后已不再读取它们，文档却仍在介绍小程序和 Google 广告的配置方法。删除「给网页增加 Google Ads」文档页，Telegram 文档的小程序章节改为移除说明，前端变量说明把这几项与 `VITE_DEFAULT_LANG` 一起列为已移除的变量，GitHub Actions、常见问题、文档首页与 README 中的相关内容一并删除；`APP_CONFIG`、类型声明与 `.env.example` 中的定义一并删除
+- docs: |文档| 删除前端构建脚本 `build:pages:nopwa`，以及 CLI 部署文档里「启用 Cloudflare Zero Trust 需要用它来禁用缓存」的说明：它设置的 `VITE_PWA_DISABLED` 自 2024 年 11 月起就没有代码读取，构建产物与 `build:pages` 完全相同；v1.13.0 起前端也不再包含 PWA 和 service worker，没有可禁用的缓存。启用 Zero Trust 直接用 `pnpm build:pages`，自己的部署脚本里还在调用 `build:pages:nopwa` 的改为 `pnpm build:pages` 即可
 
 ### Testing
 

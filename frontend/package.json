@@ -8,7 +8,6 @@
     "build": "vite build -m prod --emptyOutDir",
     "build:release": "vite build -m example --emptyOutDir",
     "build:pages": "vite build -m pages --emptyOutDir",
-    "build:pages:nopwa": "VITE_PWA_DISABLED=true vite build -m pages --emptyOutDir",
     "preview": "vite preview",
     "deploy:preview": "npm run build && wrangler pages deploy ./dist --branch preview",
     "deploy": "npm run build && wrangler pages deploy ./dist --branch production",

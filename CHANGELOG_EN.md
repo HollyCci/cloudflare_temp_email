@@ -19,6 +19,7 @@
 ### Improvements
 
 - docs: |Docs| Remove the frontend variables `VITE_IS_TELEGRAM`, `VITE_GOOGLE_AD_CLIENT` and `VITE_GOOGLE_AD_SLOT` (`IS_TELEGRAM`, `GOOGLE_AD_CLIENT` and `GOOGLE_AD_SLOT` in `app-config`): the frontend stopped reading them with the React rewrite in v1.13.0, yet the docs still explained how to set up the Mini App and Google Ads. The "Add Google Ads" page is deleted, the Mini App section of the Telegram guide becomes a removal note, Frontend Variables lists them with `VITE_DEFAULT_LANG` as removed variables, and the related GitHub Actions, common issues, docs home page and README content is removed; their definitions in `APP_CONFIG`, the type declarations and `.env.example` are removed too
+- docs: |Docs| Remove the frontend build script `build:pages:nopwa` and the CLI deployment docs' advice to use it "to disable caching" with Cloudflare Zero Trust: nothing has read the `VITE_PWA_DISABLED` it sets since November 2024, so it built exactly what `build:pages` builds, and since v1.13.0 the frontend has no PWA or service worker, so there is no cache to disable. Zero Trust deployments use `pnpm build:pages`; deploy scripts that still call `build:pages:nopwa` should call `pnpm build:pages` instead
 
 ### Testing
 

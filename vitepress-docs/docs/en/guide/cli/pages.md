@@ -54,7 +54,6 @@ For this method, put frontend variables in `frontend/.env.pages.local`. Same-ori
 ```bash
 cd frontend
 pnpm install
-# If you want to enable Cloudflare Zero Trust, you need to use pnpm build:pages:nopwa to disable caching
 pnpm build:pages
 cd ../pages
 pnpm run deploy
