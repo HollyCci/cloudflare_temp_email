@@ -12,6 +12,10 @@
 
 - breaking: |Telegram| 移除 Telegram 小程序（Mini App）。v1.13.0 换成 React 前端后已经没有小程序页面：`VITE_IS_TELEGRAM` 不再被读取，CI 部署到 `TG_FRONTEND_NAME` 的「小程序」和发版附带的 `telegram-frontend.zip` 实际都是普通收件箱；配置了小程序 URL 时，Bot 邮件消息上的「查看邮件」按钮打开的也只是普通收件箱，看不到那封邮件。现删除 Worker 的小程序接口（`/telegram/get_bind_address`、`new_address`、`bind_address`、`unbind_address`、`get_mail`）、Telegram 设置中的 `miniAppUrl` 与「查看邮件」按钮，以及前端 `/telegram_mail` 路由、`build:telegram*`/`deploy:*telegram` 脚本、对应的 CI 任务和 `telegram-frontend.zip`；Bot 的欢迎语与邮件截断、解析失败提示改为引导到网页邮箱。Bot 命令与邮件推送不受影响；仍在使用 v1.12 及更早版本小程序前端的部署，升级 Worker 后小程序将无法使用
 
+### Bug Fixes
+
+- fix: |CI| 删除 PR Agent 工作流（`.github/workflows/pr_agent.yml`）：本仓库没有配置 `OPENAI_KEY`，它在每个 PR 上都因 OpenAI 认证失败而报错，并留下「Failed to generate code suggestions for PR」评论
+
 ### Improvements
 
 - docs: |文档| 删除前端变量 `VITE_IS_TELEGRAM`、`VITE_GOOGLE_AD_CLIENT`、`VITE_GOOGLE_AD_SLOT`（`app-config` 中的 `IS_TELEGRAM`、`GOOGLE_AD_CLIENT`、`GOOGLE_AD_SLOT`）：v1.13.0 换成 React 前端后已不再读取它们，文档却仍在介绍小程序和 Google 广告的配置方法。删除「给网页增加 Google Ads」文档页，Telegram 文档的小程序章节改为移除说明，前端变量说明把这几项与 `VITE_DEFAULT_LANG` 一起列为已移除的变量，GitHub Actions、常见问题、文档首页与 README 中的相关内容一并删除；`APP_CONFIG`、类型声明与 `.env.example` 中的定义一并删除
