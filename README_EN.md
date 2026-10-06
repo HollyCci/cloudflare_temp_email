@@ -142,13 +142,12 @@ Try it now → [https://mail.awsl.uk/](https://mail.awsl.uk/)
 
 - [x] Both frontend and backend support multi-language
 - [x] Modern UI design with responsive layout
-- [x] Google Ads integration support
 - [x] Use shadow DOM to prevent style pollution
 - [x] Support URL JWT parameter auto-login
 
 ### Integration & Extensions
 
-- [x] Complete `Telegram Bot` support, `Telegram` push notifications, and Telegram Bot mini app
+- [x] Complete `Telegram Bot` support and `Telegram` push notifications
 - [x] Add `SMTP proxy server` supporting `SMTP` for sending emails and `IMAP` for viewing emails
 - [x] Webhook support and message push integration
 - [x] Support `CF Turnstile` CAPTCHA verification

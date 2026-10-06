@@ -15,7 +15,6 @@ describe('APP_CONFIG', () => {
     vi.resetModules()
     vi.stubEnv('VITE_API_BASE', 'https://build.example.com')
     vi.stubEnv('VITE_CF_WEB_ANALY_TOKEN', 'build-token')
-    vi.stubEnv('VITE_IS_TELEGRAM', 'false')
   })
 
   afterEach(() => {
@@ -49,13 +48,12 @@ describe('APP_CONFIG', () => {
   })
 
   it('falls back to build settings for invalid runtime value types', async () => {
-    setRuntimeConfig({ API_BASE: {}, CF_WEB_ANALY_TOKEN: 1, IS_TELEGRAM: [] })
+    setRuntimeConfig({ API_BASE: {}, CF_WEB_ANALY_TOKEN: 1 })
 
     const { APP_CONFIG } = await import('../config')
 
     expect(APP_CONFIG.API_BASE).toBe('https://build.example.com')
     expect(APP_CONFIG.CF_WEB_ANALY_TOKEN).toBe('build-token')
-    expect(APP_CONFIG.IS_TELEGRAM).toBe('false')
   })
 
   it('reads runtime settings only once', async () => {

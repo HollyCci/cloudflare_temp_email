@@ -142,13 +142,12 @@
 
 - [x] フロントエンドとバックエンドの両方が多言語に対応しています
 - [x] レスポンシブレイアウトのモダンな UI デザインを採用しています
-- [x] Google Ads の連携に対応します
 - [x] shadow DOM を使用してスタイルの干渉を防ぎます
 - [x] URL の JWT パラメーターによる自動ログインに対応します
 
 ### 連携と拡張
 
-- [x] 完全な `Telegram Bot`、`Telegram` プッシュ通知、Telegram Bot ミニアプリに対応します
+- [x] 完全な `Telegram Bot`、`Telegram` プッシュ通知に対応します
 - [x] `SMTP proxy server` を追加し、`SMTP` によるメール送信と `IMAP` によるメール閲覧に対応します
 - [x] Webhook とメッセージプッシュ連携に対応します
 - [x] `CF Turnstile` CAPTCHA 検証に対応します

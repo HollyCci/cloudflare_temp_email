@@ -160,7 +160,6 @@ export type LocaleMessages = {
     TgNoMailMsg: string
     TgGetMailFailedMsg: string
     TgParseMailFailedMsg: string
-    TgViewMailBtnMsg: string
     TgPrevBtnMsg: string
     TgNextBtnMsg: string
     TgPleaseInputCredentialMsg: string
@@ -178,7 +177,6 @@ export type LocaleMessages = {
     TgLangSetSuccessMsg: string
     TgCurrentLangMsg: string
     TgSelectLangMsg: string
-    TgNoPermissionViewMailMsg: string
     TgBotTokenRequiredMsg: string
     TgLangFeatureDisabledMsg: string
     TgAiExtractResultMsg: string

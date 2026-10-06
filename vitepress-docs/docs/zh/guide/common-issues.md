@@ -53,7 +53,6 @@
 
 | 问题                                                           | 解决方案                                           |
 | -------------------------------------------------------------- | -------------------------------------------------- |
-| `Telgram Bot获取邮件失败：400：Bad Request:BUTTON_URL_INVALID` | tg mini app 的 URL 填写错误，需要填写 pages 的 URL |
 | `Telegram bot bind error: bind adress count reach the limit`   | 需要设置 worker 变量 `TG_MAX_ADDRESS`              |
 
 ## Github Actions

@@ -25,7 +25,7 @@ features:
   - title:  使用 rust wasm 解析邮件
     details: 使用 rust wasm 解析邮件，支持邮件各种RFC标准，支持附件, 速度极快
   - title:  支持 Telegram Bot 和 Webhook
-    details: 邮件可转发到 Telegram 或者 webhook, Telegram Bot 支持绑定邮箱，查看邮件, Telegram 小程序
+    details: 邮件可转发到 Telegram 或者 webhook, Telegram Bot 支持绑定邮箱，查看邮件
   - title: 支持发送邮件(UI/API/SMTP)
     details: 支持通过域名邮箱发送 txt 或者 html 邮件，支持 DKIM 签名, UI/API/SMTP 发送邮件
 ---

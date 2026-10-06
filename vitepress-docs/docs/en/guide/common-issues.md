@@ -53,7 +53,6 @@
 
 | Issue                                                                      | Solution                                                       |
 | -------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `Telgram Bot failed to get email: 400: Bad Request:BUTTON_URL_INVALID`    | tg mini app URL is incorrect, should be the pages URL          |
 | `Telegram bot bind error: bind adress count reach the limit`               | Need to set worker variable `TG_MAX_ADDRESS`                   |
 
 ## Github Actions
