@@ -145,12 +145,7 @@ app.use('/api/*', async (c, next) => {
 		return await next();
 	}
 
-	try {
-		return await addressJwtAuth(c, next);
-	} catch (e) {
-		console.warn(e);
-		return c.text(i18n.getMessagesbyContext(c).InvalidAddressCredentialMsg, 401)
-	}
+	return await addressJwtAuth(c, next);
 });
 // user_api auth: an account, plus the role that account was issued
 app.use('/user_api/*', async (c, next) => {

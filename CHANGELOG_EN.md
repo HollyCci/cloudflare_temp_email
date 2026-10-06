@@ -6,6 +6,22 @@
   <a href="CHANGELOG_EN.md">English</a>
 </p>
 
+## v1.13.1(main)
+
+### Bug Fixes
+
+- fix: |Auth| Fix a race in the frontend's access-token replacement: once one request had started a refresh, other requests rejected with the same token could, after a re-render, read the already-cleared token and retry with no token instead of waiting — admins got "sign in with an admin account" and mail was sent without the role. All requests rejected with the same token (before, during or after the refresh) now share one replacement and one refresh
+- fix: |Auth| Mailboxes created from the account page were not bound to the signed-in account: the bind request carried the previous mailbox credential, which the UI had not replaced yet (or none, for a new account), and the failure was swallowed by an empty `catch` while the UI still said "Created". The bind request now carries the new mailbox's credential, and a failed bind (for example the role's address limit) is reported
+- fix: |Auth| `/user_api/bind_address` answered a missing or malformed mailbox credential with 500 instead of 401: `addressJwtAuth` reported an unusable credential by throwing, which only `/api/*` caught. It now returns the 401 itself and the `/api/*` try/catch is gone, so a database error while checking a mailbox credential is no longer disguised as an invalid credential
+- fix: |Frontend| The runtime `app-config` in `index.html` hard-coded the production API address, and runtime config overrides build variables, so every non-production build (local dev, e2e) talked to the production API. It is empty again; the API address comes from `VITE_API_BASE`
+- fix: |e2e| Browser tests run again: the frontend image fetches the HeroUI Pro artifacts with `HEROUI_SETUP_KEY`, and CI enables the browser project when that secret is set (timeout raised to 20 minutes); the e2e Vite proxy matched `/admin` as a prefix, so loading the `/admin` page returned the worker's 401 JSON — prefixes now end in `/`, as in `pages/functions/_middleware.js`
+
+### Testing
+
+- test: |e2e| Browser specs rewritten for React + HeroUI: inbox, read on open, admin access control, custom subdomains, ownership of mailboxes created from the account page; specs for features not ported yet (sending, reply, passkeys, redeem codes, webhooks, database capacity, address pagination) are skipped for now
+- test: |Frontend| Add API client unit tests for access-token replacement (including concurrent and late rejections, failed refreshes and session switches), the site password dialog and the bind credential, replacing the browser spec that depended on Vue modules and could no longer run
+- test: |e2e| The bind assertion for a deleted mailbox credential used an account token without `user_email`, so it failed on the account check and never reached the mailbox credential; it now uses a valid account token, and a new case checks that missing or malformed mailbox credentials are always 401
+
 ## v1.13.0
 
 ### Features

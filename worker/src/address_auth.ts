@@ -1,5 +1,4 @@
 import { Context, Next } from 'hono';
-import { jwt } from 'hono/jwt';
 import { Jwt } from 'hono/utils/jwt';
 
 import i18n from './i18n';
@@ -33,14 +32,26 @@ export const verifyAddressToken = async (
     return addressPayload;
 };
 
-export const addressJwtAuth = async (c: Context<HonoCustomType>, next: Next) => (
-    jwt({ secret: c.env.JWT_SECRET, alg: 'HS256' })(c, async () => {
-        const payload = await validateAddressPayload(c, c.get('jwtPayload'));
-        if (!payload) {
-            c.res = c.text(i18n.getMessagesbyContext(c).InvalidAddressCredentialMsg, 401);
-            return;
-        }
-        c.set('jwtPayload', payload);
-        await next();
-    })
-);
+/**
+ * `Authorization: Bearer <jwt>` — the mailbox the caller holds. Mailbox credentials carry no
+ * expiry, though an `exp` that is present is enforced. Every route that reads one requires it,
+ * so a missing credential and an unusable one get the same 401; neither is thrown.
+ */
+const readAddressCredential = async (c: Context<HonoCustomType>): Promise<JwtPayload | null> => {
+    const parts = c.req.raw.headers.get('Authorization')?.split(/\s+/);
+    if (parts?.length !== 2 || parts[0].toLowerCase() !== 'bearer') return null;
+    let payload: Record<string, unknown>;
+    try {
+        payload = await Jwt.verify(parts[1], c.env.JWT_SECRET, 'HS256');
+    } catch {
+        return null;
+    }
+    return await validateAddressPayload(c, payload);
+};
+
+export const addressJwtAuth = async (c: Context<HonoCustomType>, next: Next) => {
+    const payload = await readAddressCredential(c);
+    if (!payload) return c.text(i18n.getMessagesbyContext(c).InvalidAddressCredentialMsg, 401);
+    c.set('jwtPayload', payload);
+    await next();
+};

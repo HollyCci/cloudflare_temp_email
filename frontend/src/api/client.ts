@@ -32,6 +32,7 @@ type FetchOptions = {
   body?: string | null
   showLoading?: boolean
   userJwt?: string
+  jwt?: string
 }
 
 const apiFetch = async (path: string, options: FetchOptions = {}) => {
@@ -50,7 +51,7 @@ const apiFetch = async (path: string, options: FetchOptions = {}) => {
     if (userAccessHeader) headers['x-user-access-token'] = userAccessHeader
     const customAuthHeader = safeHeaderValue(session.auth)
     if (customAuthHeader) headers['x-custom-auth'] = customAuthHeader
-    const authorizationHeader = safeBearerHeader(session.jwt)
+    const authorizationHeader = safeBearerHeader(options.jwt || session.jwt)
     if (authorizationHeader) headers.Authorization = authorizationHeader
 
     const initialResponse = await instance.request({
@@ -151,9 +152,10 @@ export const api = {
     if (!safeHeaderValue(userJwt || session.userJwt)) return null
     return await apiFetch('/user_api/settings', { userJwt })
   },
-  async bindUserAddress() {
+  // Binds the mailbox `jwt` belongs to; the store has not rendered a just-created mailbox yet.
+  async bindUserAddress(jwt: string) {
     if (!session.userJwt) return
-    await apiFetch('/user_api/bind_address', { method: 'POST' })
+    await apiFetch('/user_api/bind_address', { method: 'POST', jwt })
   },
   async listBoundAddresses(): Promise<{ results?: BoundAddress[] }> {
     return await apiFetch('/user_api/bind_address?limit=50&offset=0', { showLoading: false })

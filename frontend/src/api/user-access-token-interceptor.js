@@ -35,42 +35,39 @@ async function loadUserSettings(token, client, headers) {
 }
 
 export const createUserAccessTokenInterceptor = (client) => {
-  const pendingRefreshes = new Map()
-
-  async function refreshUserSettings(token, headers) {
-    if (pendingRefreshes.has(token)) return await pendingRefreshes.get(token)
-    const request = loadUserSettings(token, client, headers)
-    pendingRefreshes.set(token, request)
-    try {
-      return await request
-    } finally {
-      pendingRefreshes.delete(token)
-    }
-  }
+  // Every request that presented a rejected token gets the same replacement, whether its
+  // rejection comes back before, while or after that replacement is fetched. The session is no
+  // witness to that: the store applies its updates on a later render.
+  let lastRejection = null
 
   /**
-   * Decide which access token the retry should carry. The rejected one is dropped from the
-   * session so later requests stop presenting it; an account then gets a freshly issued token,
-   * while an address-only session has no account to issue one and simply carries no role.
+   * The rejected token is dropped from the session so later requests stop presenting it; an
+   * account then gets a freshly issued token, while an address-only session has no account to
+   * issue one and simply carries no role.
    */
-  async function resolveAccessToken(config) {
-    const rejected = safeHeaderValue(config.headers.get('x-user-access-token'))
+  async function replace(rejected, headers) {
     const current = safeHeaderValue(session.userSettings.access_token)
-    // a concurrent request already replaced it — retry with what the session holds now
-    if (current !== rejected) return current
-
+    // the account settings were reloaded meanwhile and already hold a newer token
+    if (current && current !== rejected) return current
     session.setUserSettings({ access_token: null })
-
-    const userToken = safeHeaderValue(config.headers.get('x-user-token'))
+    const userToken = safeHeaderValue(headers.get('x-user-token'))
     if (!userToken) return null
-    const settings = await refreshUserSettings(userToken, config.headers)
+    const settings = await loadUserSettings(userToken, client, headers)
     return safeHeaderValue(settings?.access_token)
+  }
+
+  function replacementFor(config) {
+    const rejected = safeHeaderValue(config.headers.get('x-user-access-token'))
+    if (lastRejection?.token !== rejected) {
+      lastRejection = { token: rejected, replacement: replace(rejected, config.headers) }
+    }
+    return lastRejection.replacement
   }
 
   return {
     matches,
     handle: async ({ config }) => {
-      const accessToken = await resolveAccessToken(config)
+      const accessToken = await replacementFor(config)
       if (!isCurrentSession(config)) throw new Error('User session changed, please retry')
       const headers = new AxiosHeaders(config.headers)
       headers.delete('x-user-access-token')

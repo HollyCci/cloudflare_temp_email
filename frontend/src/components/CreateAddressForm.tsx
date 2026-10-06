@@ -89,11 +89,7 @@ export function CreateAddressForm({
       if (mode === 'user' && next.jwt) {
         invalidateAddressSwitch()
         setJwt(next.jwt)
-        try {
-          await api.bindUserAddress()
-        } catch {
-          // bind is best-effort when the user session exists
-        }
+        await api.bindUserAddress(next.jwt)
       }
       toast(t('created'), { variant: 'success' })
       onCreated?.(next)

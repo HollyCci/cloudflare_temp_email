@@ -23,6 +23,7 @@ RUN openssl req -x509 -newkey rsa:2048 -keyout /tmp/key.pem -out /tmp/cert.pem \
 # Allow Docker internal hostnames (e.g. "frontend") to pass Vite's host check.
 # Configure HTTPS with self-signed cert for secure context (WebAuthn/crypto.subtle).
 # Proxy API paths to the worker to avoid mixed-content (HTTPS->HTTP) blocking.
+# Prefixes end in "/" like pages/functions/_middleware.js so SPA routes such as /admin stay with Vite.
 RUN mv vite.config.js vite.config.original.js && \
     echo 'import config from "./vite.config.original.js";\
 import fs from "fs";\
@@ -35,12 +36,12 @@ config.server = {\
     cert: fs.readFileSync("/tmp/cert.pem"),\
   },\
   proxy: {\
-    "/api": { target: workerTarget, changeOrigin: true },\
-    "/admin": { target: workerTarget, changeOrigin: true },\
-    "/user_api": { target: workerTarget, changeOrigin: true },\
-    "/open_api": { target: workerTarget, changeOrigin: true },\
-    "/redeem_api": { target: workerTarget, changeOrigin: true },\
-    "/external": { target: workerTarget, changeOrigin: true },\
+    "/api/": { target: workerTarget, changeOrigin: true },\
+    "/admin/": { target: workerTarget, changeOrigin: true },\
+    "/user_api/": { target: workerTarget, changeOrigin: true },\
+    "/open_api/": { target: workerTarget, changeOrigin: true },\
+    "/redeem_api/": { target: workerTarget, changeOrigin: true },\
+    "/external/": { target: workerTarget, changeOrigin: true },\
     "/health_check": { target: workerTarget, changeOrigin: true },\
   },\
 };\
