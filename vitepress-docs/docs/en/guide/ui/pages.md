@@ -150,13 +150,12 @@ const generate = async () => {
     ```html
     <script id="app-config" type="application/json">
     {
-      "API_BASE": "https://temp-email-api.example.com",
-      "DEFAULT_LANG": "en"
+      "API_BASE": "https://temp-email-api.example.com"
     }
     </script>
     ```
 
-    `API_BASE` is the backend API root URL without a trailing `/`; `DEFAULT_LANG` supports `zh`, `en`, `es`, `pt-BR`, `ja`, and `de`. You can also set `CF_WEB_ANALY_TOKEN`, `IS_TELEGRAM`, `GOOGLE_AD_CLIENT`, and `GOOGLE_AD_SLOT`; see [Frontend Variables](/en/guide/frontend-vars) for their purpose and values. Fields present in `app-config` override the corresponding settings built into JavaScript, while omitted fields keep their existing settings.
+    `API_BASE` is the backend API root URL without a trailing `/`. You can also set `CF_WEB_ANALY_TOKEN`, `IS_TELEGRAM`, `GOOGLE_AD_CLIENT`, and `GOOGLE_AD_SLOT`; see [Frontend Variables](/en/guide/frontend-vars) for their purpose and values. Fields present in `app-config` override the corresponding settings built into JavaScript, while omitted fields keep their existing settings.
 
 4. Select `Pages`, click `Create Pages`, modify the name, upload the downloaded zip package
 

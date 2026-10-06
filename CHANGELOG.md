@@ -16,6 +16,10 @@
 - fix: |Frontend| `index.html` 的运行时配置 `app-config` 写死了生产 API 地址，而运行时配置优先于构建变量，本地开发、e2e 等所有非生产构建都直连了生产 API。恢复为空配置，API 地址回到 `VITE_API_BASE`
 - fix: |e2e| browser 测试恢复可运行：前端镜像构建时用 `HEROUI_SETUP_KEY` 拉取 HeroUI Pro 产物，CI 配置该 secret 后自动启用 browser 项目（超时放宽到 20 分钟）；e2e 前端的 Vite 代理以 `/admin` 为前缀匹配，打开 `/admin` 页面直接得到 Worker 的 401 JSON，改为与 `pages/functions/_middleware.js` 一致、以 `/` 结尾的前缀
 
+### Improvements
+
+- docs: |文档| 删除前端变量 `VITE_DEFAULT_LANG`（`app-config` 中的 `DEFAULT_LANG`）：v1.13.0 将界面固定为中文后前端已不再读取它，文档却仍写着可选 `zh`、`en`、`es` 等六种语言。前端变量说明、手动 ZIP 部署与 CLI 部署文档不再列出这一项，并注明旧配置可直接删除；`APP_CONFIG`、类型声明与 `.env.example` 中的定义一并删除。Worker 变量 `DEFAULT_LANG` 不受影响
+
 ### Testing
 
 - test: |e2e| browser 用例按 React + HeroUI 重写：收件箱、打开即已读、管理端访问控制、自定义子域名、账户页新建邮箱的归属；尚未移植的功能（发信、回复、Passkey、兑换码、Webhook、数据库容量、地址分页）的用例暂时跳过

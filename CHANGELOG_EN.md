@@ -16,6 +16,10 @@
 - fix: |Frontend| The runtime `app-config` in `index.html` hard-coded the production API address, and runtime config overrides build variables, so every non-production build (local dev, e2e) talked to the production API. It is empty again; the API address comes from `VITE_API_BASE`
 - fix: |e2e| Browser tests run again: the frontend image fetches the HeroUI Pro artifacts with `HEROUI_SETUP_KEY`, and CI enables the browser project when that secret is set (timeout raised to 20 minutes); the e2e Vite proxy matched `/admin` as a prefix, so loading the `/admin` page returned the worker's 401 JSON — prefixes now end in `/`, as in `pages/functions/_middleware.js`
 
+### Improvements
+
+- docs: |Docs| Remove the frontend variable `VITE_DEFAULT_LANG` (`DEFAULT_LANG` in `app-config`): the frontend stopped reading it when v1.13.0 fixed the UI to Chinese, yet the docs still offered six languages (`zh`, `en`, `es`, …). Frontend Variables, Manual ZIP Deployment and CLI Deployment no longer list it and note that old settings can be deleted; its definitions in `APP_CONFIG`, the type declarations and `.env.example` are removed too. The Worker's `DEFAULT_LANG` variable is unaffected
+
 ### Testing
 
 - test: |e2e| Browser specs rewritten for React + HeroUI: inbox, read on open, admin access control, custom subdomains, ownership of mailboxes created from the account page; specs for features not ported yet (sending, reply, passkeys, redeem codes, webhooks, database capacity, address pagination) are skipped for now

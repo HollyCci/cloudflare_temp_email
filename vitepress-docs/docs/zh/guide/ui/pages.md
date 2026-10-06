@@ -150,13 +150,12 @@ const generate = async () => {
     ```html
     <script id="app-config" type="application/json">
     {
-      "API_BASE": "https://temp-email-api.example.com",
-      "DEFAULT_LANG": "en"
+      "API_BASE": "https://temp-email-api.example.com"
     }
     </script>
     ```
 
-    `API_BASE` 是后端 API 根地址，不要带结尾 `/`；`DEFAULT_LANG` 支持 `zh`、`en`、`es`、`pt-BR`、`ja`、`de`。还可以设置 `CF_WEB_ANALY_TOKEN`、`IS_TELEGRAM`、`GOOGLE_AD_CLIENT`、`GOOGLE_AD_SLOT`，用途和取值请查看 [前端变量说明](/zh/guide/frontend-vars)。`app-config` 中存在的字段会覆盖构建进 JS 的对应配置，未填写的字段继续使用原配置。
+    `API_BASE` 是后端 API 根地址，不要带结尾 `/`。还可以设置 `CF_WEB_ANALY_TOKEN`、`IS_TELEGRAM`、`GOOGLE_AD_CLIENT`、`GOOGLE_AD_SLOT`，用途和取值请查看 [前端变量说明](/zh/guide/frontend-vars)。`app-config` 中存在的字段会覆盖构建进 JS 的对应配置，未填写的字段继续使用原配置。
 
 4. 选择 `Pages`，点击 `Create Pages`, 修改名称，上传下载的 zip 包
 

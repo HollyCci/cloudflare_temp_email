@@ -2,7 +2,6 @@
 
 interface ImportMetaEnv {
   readonly VITE_API_BASE?: string
-  readonly VITE_DEFAULT_LANG?: string
   readonly VITE_CF_WEB_ANALY_TOKEN?: string
   readonly VITE_IS_TELEGRAM?: string
   readonly VITE_GOOGLE_AD_CLIENT?: string
