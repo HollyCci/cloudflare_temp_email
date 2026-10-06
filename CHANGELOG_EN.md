@@ -6,6 +6,12 @@
   <a href="CHANGELOG_EN.md">English</a>
 </p>
 
+## v1.13.2(main)
+
+### Improvements
+
+- docs: |Docs| Remove the frontend build script `build:pages:nopwa` and the CLI deployment docs' advice to use it "to disable caching" with Cloudflare Zero Trust: nothing has read the `VITE_PWA_DISABLED` it sets since November 2024, so it built exactly what `build:pages` builds, and since v1.13.0 the frontend has no PWA or service worker, so there is no cache to disable. Zero Trust deployments use `pnpm build:pages`; deploy scripts that still call `build:pages:nopwa` should call `pnpm build:pages` instead
+
 ## v1.13.1
 
 ### Bug Fixes

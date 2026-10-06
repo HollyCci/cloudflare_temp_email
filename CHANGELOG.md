@@ -6,6 +6,12 @@
   <a href="CHANGELOG_EN.md">English</a>
 </p>
 
+## v1.13.2(main)
+
+### Improvements
+
+- docs: |文档| 删除前端构建脚本 `build:pages:nopwa`，以及 CLI 部署文档里「启用 Cloudflare Zero Trust 需要用它来禁用缓存」的说明：它设置的 `VITE_PWA_DISABLED` 自 2024 年 11 月起就没有代码读取，构建产物与 `build:pages` 完全相同；v1.13.0 起前端也不再包含 PWA 和 service worker，没有可禁用的缓存。启用 Zero Trust 直接用 `pnpm build:pages`，自己的部署脚本里还在调用 `build:pages:nopwa` 的改为 `pnpm build:pages` 即可
+
 ## v1.13.1
 
 ### Bug Fixes
