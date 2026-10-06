@@ -2,12 +2,12 @@ import { expect, test } from '../../fixtures/test';
 import {
   FRONTEND_URL,
   TEST_DOMAIN,
-  WORKER_URL,
+  deleteAddress,
   loginAsBootstrapAdmin,
 } from '../../fixtures/test-helpers';
 
+// The admin console's create form has no Turnstile, so it can be driven end to end.
 test('create an address with a custom subdomain from the admin UI', async ({ page, request }) => {
-  // Use the admin page — it has CreateAddressForm without Turnstile.
   const adminJwt = await loginAsBootstrapAdmin(request);
   await page.addInitScript((token) => {
     localStorage.clear();
@@ -15,59 +15,45 @@ test('create an address with a custom subdomain from the admin UI', async ({ pag
   }, adminJwt);
   await page.goto(`${FRONTEND_URL}/admin`);
 
-  // Wait for the admin console to load (default tab is "create").
-  const nameField = page.locator('[name="addressName"]');
-  await expect(nameField).toBeVisible({ timeout: 10_000 });
-
   const name = `subui${Date.now()}`;
-  await nameField.fill(name);
+  await page.getByRole('textbox', { name: '用户名' }).fill(name);
 
-  // Subdomain radio group — e2e wrangler.toml enables RANDOM_SUBDOMAIN_DOMAINS for TEST_DOMAIN.
-  const noneRadio = page.getByRole('radio', { name: '不使用' });
-  const randomRadio = page.getByRole('radio', { name: '随机' });
-  const customRadio = page.getByRole('radio', { name: '自定义' });
+  // RANDOM_SUBDOMAIN_DOMAINS in the e2e wrangler.toml covers TEST_DOMAIN.
+  // HeroUI draws over the native radio input, so choose an option through its label.
+  const subdomain = page.getByRole('radiogroup', { name: '子域名' });
+  const radio = (label: string) => subdomain.getByRole('radio', { name: label });
+  const choose = (label: string) => subdomain.getByText(label, { exact: true }).click();
 
-  await expect(noneRadio).toBeChecked();
+  await expect(radio('不使用')).toBeChecked();
 
-  await randomRadio.click();
-  await expect(noneRadio).not.toBeChecked();
-  await expect(randomRadio).toBeChecked();
-  await expect(customRadio).not.toBeChecked();
+  await choose('随机');
+  await expect(radio('不使用')).not.toBeChecked();
+  await expect(radio('随机')).toBeChecked();
+  await expect(radio('自定义')).not.toBeChecked();
 
-  await customRadio.click();
-  await expect(randomRadio).not.toBeChecked();
-  await expect(customRadio).toBeChecked();
+  await choose('自定义');
+  await expect(radio('随机')).not.toBeChecked();
+  await expect(radio('自定义')).toBeChecked();
 
-  await randomRadio.click();
-  await expect(randomRadio).toBeChecked();
-  await expect(customRadio).not.toBeChecked();
+  await choose('随机');
+  await expect(radio('随机')).toBeChecked();
+  await expect(radio('自定义')).not.toBeChecked();
 
-  await customRadio.click();
+  await choose('自定义');
   await page.locator('[name="subdomain"]').fill('team');
 
-  // Intercept the create response to capture the JWT for cleanup.
-  const createResponse = page.waitForResponse(
-    (r) => r.url().includes('/admin/new_address') && r.request().method() === 'POST',
+  const created = page.waitForResponse(
+    (r) => new URL(r.url()).pathname === '/admin/new_address' && r.request().method() === 'POST',
   );
-
-  // ActionButton with confirm: first click opens popover, second confirms.
-  await page.getByRole('button', { name: '创建' }).first().click();
-  await page.getByRole('button', { name: '创建' }).last().click();
-
-  const res = await createResponse;
+  await page.getByRole('button', { name: '创建', exact: true }).click();
+  const res = await created;
   expect(res.ok()).toBe(true);
-  const body = await res.json();
-  const jwt: string = body.jwt;
-  expect(jwt).toBeTruthy();
+  const { address, jwt } = await res.json();
 
-  const domain = `team.${TEST_DOMAIN}`;
-  // The credential modal should show the created address.
-  await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
-  await expect(page.getByRole('dialog').getByText(domain)).toBeVisible();
-
-  // Cleanup.
-  const del = await request.delete(`${WORKER_URL}/api/address`, {
-    headers: { Authorization: `Bearer ${jwt}` },
-  });
-  expect(del.ok()).toBe(true);
+  try {
+    expect(address).toMatch(new RegExp(`${name}@team\\.${TEST_DOMAIN.replace(/\./g, '\\.')}$`));
+    await expect(page.getByRole('dialog').getByText(address, { exact: true })).toBeVisible();
+  } finally {
+    await deleteAddress(request, jwt);
+  }
 });
