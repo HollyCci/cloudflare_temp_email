@@ -210,7 +210,7 @@ test.describe('Redemption Admin authentication', () => {
     {
       name: 'user account JWT',
       headers: () => ({
-        'x-user-token': signTestToken({ user_id: 1, exp: Math.floor(Date.now() / 1000) + 3600 }),
+        'x-user-token': signTestToken({ user_id: 1, user_email: 'nobody@test.example.com', exp: Math.floor(Date.now() / 1000) + 3600 }),
       }),
     },
     {

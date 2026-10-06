@@ -11,6 +11,11 @@ function signToken(payload: Record<string, unknown>) {
   return `${header}.${body}.${signature}`;
 }
 
+// A usable account token, so that the mailbox credential is what a bind request is judged on.
+function accountToken() {
+  return signToken({ user_id: 1, user_email: 'nobody@test.example.com', exp: Math.floor(Date.now() / 1000) + 60 });
+}
+
 async function expectRejected(request: APIRequestContext, jwt: string) {
   for (const [method, path] of [
     ['GET', '/api/settings'],
@@ -52,7 +57,7 @@ async function expectRejected(request: APIRequestContext, jwt: string) {
   const bind = await request.post(`${WORKER_URL}/user_api/bind_address`, {
     headers: {
       Authorization: `Bearer ${jwt}`,
-      'x-user-token': signToken({ user_id: 1, exp: Math.floor(Date.now() / 1000) + 60 }),
+      'x-user-token': accountToken(),
       // clear the inherited admin role token so the deleted address credential is what fails
       'x-user-access-token': '',
     },
@@ -122,5 +127,17 @@ test('valid numeric/string IDs work; missing, invalid and mismatched IDs are rej
     }
   } finally {
     await deleteAddress(request, mailbox.jwt);
+  }
+});
+
+test('a missing or malformed mailbox credential is a 401 wherever one is required', async ({ request }) => {
+  for (const authorization of [undefined, 'Bearer', 'Bearer not-a-jwt', 'Basic abc', 'Bearer a b']) {
+    const headers: Record<string, string> = authorization ? { Authorization: authorization } : {};
+    const settings = await request.get(`${WORKER_URL}/api/settings`, { headers });
+    expect(settings.status(), `/api/settings with ${authorization}`).toBe(401);
+    const bind = await request.post(`${WORKER_URL}/user_api/bind_address`, {
+      headers: { ...headers, 'x-user-token': accountToken(), 'x-user-access-token': '' },
+    });
+    expect(bind.status(), `/user_api/bind_address with ${authorization}`).toBe(401);
   }
 });
