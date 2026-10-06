@@ -22,6 +22,7 @@ export function InboxPage() {
   const {
     jwt, setJwt, theme, openSettings, setAddressSettings, userJwt, addresses, addressesFetched,
     switchingAddress, addressOpenFailed, inboxEpoch, openMailbox, finishAddressSwitch, invalidateAddressSwitch,
+    addressesError, loadAccount,
   } = useAppState()
   const [mails, setMails] = useState<Mail[]>([])
   const [query, setQuery] = useState('')
@@ -125,16 +126,31 @@ export function InboxPage() {
   if (!jwt) {
     const signedIn = Boolean(userJwt)
     const hasMailboxes = addresses.length > 0
-    const opening = signedIn && !addressOpenFailed && (!addressesFetched || hasMailboxes)
-    const failed = signedIn && addressOpenFailed && hasMailboxes
-    const title = opening ? t('openingMailbox') : failed ? t('openingMailboxFailed') : signedIn ? t('noMailboxTitle') : t('noAddressTitle')
-    const description = opening
-      ? t('openingMailboxHint')
-      : failed
-        ? t('openingMailboxFailedHint')
-        : signedIn
-          ? t('noMailboxDescription')
-          : t('noAddressDescription')
+    // With nothing loaded, a failed load is not the same as having no mailbox.
+    const state = !signedIn
+      ? 'anonymous'
+      : !addressesFetched
+        ? 'opening'
+        : !hasMailboxes
+          ? addressesError ? 'loadFailed' : 'empty'
+          : addressOpenFailed ? 'openFailed' : 'opening'
+    const opening = state === 'opening'
+    const loadFailed = state === 'loadFailed'
+    const failed = state === 'openFailed'
+    const title = {
+      anonymous: t('noAddressTitle'),
+      opening: t('openingMailbox'),
+      loadFailed: t('accountLoadFailed'),
+      empty: t('noMailboxTitle'),
+      openFailed: t('openingMailboxFailed'),
+    }[state]
+    const description = {
+      anonymous: t('noAddressDescription'),
+      opening: t('openingMailboxHint'),
+      loadFailed: addressesError,
+      empty: t('noMailboxDescription'),
+      openFailed: t('openingMailboxFailedHint'),
+    }[state]
     const retryOpen = () => {
       const first = addresses[0]
       if (first) void openMailbox(first)
@@ -155,8 +171,9 @@ export function InboxPage() {
             </div>
             {opening ? null : (
               <div className="flex flex-wrap items-center justify-center gap-2">
+                {loadFailed ? <Button onPress={() => void loadAccount()}>{t('retry')}</Button> : null}
                 {failed ? <Button onPress={retryOpen}>{t('retryOpenMailbox')}</Button> : null}
-                <Button variant={failed ? 'outline' : 'primary'} onPress={() => navigate(withLocale('/user', locale))}>
+                <Button variant={failed || loadFailed ? 'outline' : 'primary'} onPress={() => navigate(withLocale('/user', locale))}>
                   {signedIn ? t('createAddress') : t('goAccount')}
                 </Button>
               </div>

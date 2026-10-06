@@ -13,6 +13,8 @@ export type Session = {
   setUserSettings: (next: Partial<UserSettings>) => void
   setShowAuth: (next: boolean) => void
   setLoading: (next: boolean) => void
+  /** Signs the account out if `userJwt` is still the one in use; the worker refused it. */
+  signOutAccount: (userJwt: string) => void
 }
 
 const defaultUserSettings: UserSettings = {
@@ -72,6 +74,7 @@ export const session: Session = {
   setUserSettings: () => {},
   setShowAuth: () => {},
   setLoading: () => {},
+  signOutAccount: () => {},
 }
 
 export const emptyUserSettings = defaultUserSettings

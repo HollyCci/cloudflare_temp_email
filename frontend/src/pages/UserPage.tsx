@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Card, Input, Label, Spinner, Tabs, TextField, toast } from '@heroui/react'
+import { Button, Card, Input, Label, Spinner, Tabs, TextField, toast } from '@heroui/react'
 import { EmptyState, ListView } from '@heroui-pro/react'
 import { Envelope } from '@gravity-ui/icons'
 import { useNavigate } from 'react-router'
@@ -19,7 +19,7 @@ export function UserPage() {
   const navigate = useNavigate()
   const {
     userJwt, setUserJwt, setJwt, userOpenSettings, setUserOpenSettings,
-    userSettings, setUserSettings, openSettings, addresses, setAddresses, setAddressesFetched,
+    userSettings, openSettings, addresses, addressesFetched, addressesError, loadAccount,
     openMailbox, invalidateAddressSwitch,
   } = useAppState()
   const [tab, setTab] = useState('signin')
@@ -27,7 +27,6 @@ export function UserPage() {
   const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
   const [cfToken, setCfToken] = useState('')
-  const [addressesLoading, setAddressesLoading] = useState(false)
 
   useEffect(() => {
     void api.getUserOpenSettings()
@@ -35,31 +34,10 @@ export function UserPage() {
       .catch((error) => toast(error.message, { variant: 'danger' }))
   }, [setUserOpenSettings])
 
-  const loadAddresses = async () => {
-    if (!userJwt) {
-      setAddresses([])
-      setAddressesFetched(true)
-      setAddressesLoading(false)
-      return
-    }
-    setAddressesLoading(true)
-    setAddressesFetched(false)
-    try {
-      const settings = await api.getUserSettings()
-      if (settings) setUserSettings({ ...settings, fetched: true })
-      const res = await api.listBoundAddresses()
-      setAddresses(res.results || [])
-    } catch (error: any) {
-      toast(error.message, { variant: 'danger' })
-    } finally {
-      setAddressesFetched(true)
-      setAddressesLoading(false)
-    }
-  }
-
+  // The list refreshes whenever the account page opens; a load already running is shared.
   useEffect(() => {
-    void loadAddresses()
-  }, [userJwt])
+    void loadAccount()
+  }, [userJwt, loadAccount])
 
   const login = async () => {
     if (!email || !password) {
@@ -195,16 +173,27 @@ export function UserPage() {
                   <Card.Title>{t('createAddress')}</Card.Title>
                 </Card.Header>
                 <Card.Content>
-                  <CreateAddressForm mode="user" onCreated={() => void loadAddresses()} />
+                  <CreateAddressForm mode="user" onCreated={() => void loadAccount()} />
                 </Card.Content>
               </Card>
             ) : null}
             <div className="flex flex-col gap-3">
               <h2 className="text-lg font-semibold">{t('boundAddresses')}</h2>
-              {addressesLoading ? (
+              {!addressesFetched ? (
                 <div className="flex justify-center py-10">
                   <Spinner color="current" />
                 </div>
+              ) : addressesError && addresses.length === 0 ? (
+                <EmptyState>
+                  <EmptyState.Header>
+                    <EmptyState.Media variant="icon"><Envelope /></EmptyState.Media>
+                    <EmptyState.Title>{t('accountLoadFailed')}</EmptyState.Title>
+                    <EmptyState.Description>{addressesError}</EmptyState.Description>
+                  </EmptyState.Header>
+                  <EmptyState.Content>
+                    <Button onPress={() => void loadAccount()}>{t('retry')}</Button>
+                  </EmptyState.Content>
+                </EmptyState>
               ) : addresses.length === 0 ? (
                 <EmptyState>
                   <EmptyState.Header>

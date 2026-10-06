@@ -18,8 +18,8 @@ function LocaleGate({ children }: { children: React.ReactNode }) {
 
 function Bootstrap() {
   const {
-    setOpenSettings, setUserSettings, userJwt, jwt, setAddresses, setAddressesFetched, addresses, openMailbox,
-    openSettings,
+    setOpenSettings, userJwt, jwt, setAddresses, setAddressesFetched, addresses, openMailbox,
+    openSettings, loadAccount,
   } = useAppState()
 
   useEffect(() => {
@@ -37,27 +37,8 @@ function Bootstrap() {
       setAddressesFetched(true)
       return
     }
-    setAddressesFetched(false)
-    void api.getUserSettings()
-      .then((settings) => {
-        if (settings) setUserSettings({ ...settings, fetched: true })
-      })
-      .catch(() => {})
-    let cancelled = false
-    void api.listBoundAddresses()
-      .then((res) => {
-        if (!cancelled) setAddresses(res.results || [])
-      })
-      .catch(() => {
-        if (!cancelled) setAddresses([])
-      })
-      .finally(() => {
-        if (!cancelled) setAddressesFetched(true)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [userJwt, setUserSettings, setAddresses, setAddressesFetched])
+    void loadAccount()
+  }, [userJwt, loadAccount, setAddresses, setAddressesFetched])
 
   useEffect(() => {
     if (!userJwt || jwt || addresses.length === 0) return

@@ -67,6 +67,7 @@ beforeEach(() => {
     },
     setShowAuth: (next) => { session.showAuth = next },
     setLoading: (next) => { session.loading = next },
+    signOutAccount: vi.fn(),
   })
 })
 
@@ -234,5 +235,44 @@ describe('mailbox binding', () => {
     expect(server.requests.map((req) => [req.path, req.authorization])).toEqual([
       ['/user_api/bind_address', 'Bearer created-mailbox-jwt'],
     ])
+  })
+})
+
+describe('account sign-out', () => {
+  const REFUSED = {
+    status: 401,
+    data: { code: 'AUTH_USER_TOKEN_INVALID', message: 'Your sign-in is no longer valid, please sign in again' },
+  }
+
+  it('signs the account out when the worker refuses its token, and says why', async () => {
+    server.respond = () => REFUSED
+    await expect(api.fetch('/user_api/bind_address')).rejects.toThrow('[401]: Your sign-in is no longer valid')
+    expect(session.signOutAccount).toHaveBeenCalledWith('account-jwt')
+  })
+
+  it('signs out the account a request presented, also when it is passed explicitly', async () => {
+    server.respond = () => REFUSED
+    await expect(api.getUserSettings('newer-account')).rejects.toThrow('[401]')
+    expect(session.signOutAccount).toHaveBeenCalledWith('newer-account')
+  })
+
+  it('signs the account out when replacing an access token finds the account gone', async () => {
+    server.respond = (req) => req.path === '/user_api/settings' ? REFUSED : EXPIRED
+    await expect(api.fetch('/api/send_mail', { method: 'POST' })).rejects.toThrow('[401]: Your sign-in is no longer valid')
+    expect(server.requests.map((req) => req.path)).toEqual(['/api/send_mail', '/user_api/settings'])
+    expect(session.signOutAccount).toHaveBeenCalledWith('account-jwt')
+  })
+
+  it.each([
+    ['an access token it can replace', (req) => req.path === '/user_api/settings' ? FRESH : req.accessToken === stale ? EXPIRED : echo(req), null],
+    ['a missing admin role', () => ({ status: 401, data: { code: 'AUTH_ADMIN_CREDENTIAL_INVALID', message: 'Admin role required' } }), '[401]: Admin role required'],
+    ['a plain-text 401', () => ({ status: 401, data: 'Unauthorized' }), '[401]: Unauthorized'],
+    ['a server error', () => ({ status: 500, data: 'Server error' }), '[500]: Server error'],
+  ])('keeps the account on %s', async (_, respond, error) => {
+    server.respond = respond
+    const result = api.fetch('/admin/db_version')
+    if (error) await expect(result).rejects.toThrow(error)
+    else await expect(result).resolves.toEqual({ path: '/admin/db_version', token: 'fresh-token' })
+    expect(session.signOutAccount).not.toHaveBeenCalled()
   })
 })
