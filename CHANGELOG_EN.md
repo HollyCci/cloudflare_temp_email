@@ -20,6 +20,10 @@
 - fix: |Frontend| A fresh page load of the production build never loaded the account settings: the startup load ran before the store synced `session`, so `getUserSettings()` found no token and returned without a request, and the role and the admin entry only appeared after visiting the account page (the dev server hid this by running effects twice). The store now loads the account and passes the token explicitly
 - fix: |Frontend| The startup account load no longer swallows errors: a failed load shows "Could not load your account" with a retry instead of "No mailbox yet"
 
+### Improvements
+
+- docs: |Docs| Remove the frontend variable `VITE_DEFAULT_LANG` (`DEFAULT_LANG` in `app-config`): the frontend stopped reading it when v1.13.0 fixed the UI to Chinese, yet the docs still offered six languages (`zh`, `en`, `es`, …). Frontend Variables, Manual ZIP Deployment and CLI Deployment no longer list it and note that old settings can be deleted; its definitions in `APP_CONFIG`, the type declarations and `.env.example` are removed too. The Worker's `DEFAULT_LANG` variable is unaffected
+
 ### Testing
 
 - test: |e2e| Browser specs rewritten for React + HeroUI: inbox, read on open, admin access control, custom subdomains, ownership of mailboxes created from the account page; specs for features not ported yet (sending, reply, passkeys, redeem codes, webhooks, database capacity, address pagination) are skipped for now

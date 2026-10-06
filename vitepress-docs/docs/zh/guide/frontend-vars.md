@@ -10,7 +10,6 @@
 
 ```ini
 VITE_API_BASE=https://temp-email-api.example.com
-VITE_DEFAULT_LANG=en
 ```
 
 完整步骤请查看 [CLI 部署](/zh/guide/cli/pages) 和 [GitHub Actions 部署](/zh/guide/actions/github-action)。
@@ -22,8 +21,7 @@ VITE_DEFAULT_LANG=en
 ```html
 <script id="app-config" type="application/json">
 {
-  "API_BASE": "https://temp-email-api.example.com",
-  "DEFAULT_LANG": "en"
+  "API_BASE": "https://temp-email-api.example.com"
 }
 </script>
 ```
@@ -37,8 +35,9 @@ VITE_DEFAULT_LANG=en
 | ENV 变量 | `app-config` 字段 | 是否必须 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- | --- | --- |
 | `VITE_API_BASE` | `API_BASE` | 视部署方式 | 文本 | 空 | 以 `https://` 开头的后端 API 根地址，不要带结尾 `/`；空值表示使用同域 API |
-| `VITE_DEFAULT_LANG` | `DEFAULT_LANG` | 否 | 文本 | `zh` | 默认语言，支持 `zh`、`en`、`es`、`pt-BR`、`ja`、`de` |
 | `VITE_CF_WEB_ANALY_TOKEN` | `CF_WEB_ANALY_TOKEN` | 否 | 文本 | 空 | Cloudflare Web Analytics Token |
 | `VITE_IS_TELEGRAM` | `IS_TELEGRAM` | 否 | 布尔值 | `false` | 是否启用 Telegram Mini App，详见 [Telegram 配置](/zh/guide/feature/telegram) |
 | `VITE_GOOGLE_AD_CLIENT` | `GOOGLE_AD_CLIENT` | 否 | 文本 | 空 | Google AdSense Client ID，详见 [Google Ads 配置](/zh/guide/feature/google-ads) |
 | `VITE_GOOGLE_AD_SLOT` | `GOOGLE_AD_SLOT` | 否 | 文本 | 空 | Google AdSense Slot ID，详见 [Google Ads 配置](/zh/guide/feature/google-ads) |
+
+自 v1.13.0 起前端界面固定为中文，不再读取 `VITE_DEFAULT_LANG`（`app-config` 中的 `DEFAULT_LANG`），旧配置中的这一项可以删除。[Worker 变量](/zh/guide/worker-vars) 中的 `DEFAULT_LANG` 是另一项设置，不受影响。

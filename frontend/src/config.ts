@@ -31,7 +31,6 @@ const getTelegramConfigValue = (buildValue: string): string | boolean => {
 
 export const APP_CONFIG = {
   API_BASE: getStringConfigValue('API_BASE', import.meta.env.VITE_API_BASE || ''),
-  DEFAULT_LANG: getStringConfigValue('DEFAULT_LANG', import.meta.env.VITE_DEFAULT_LANG || ''),
   CF_WEB_ANALY_TOKEN: getStringConfigValue('CF_WEB_ANALY_TOKEN', import.meta.env.VITE_CF_WEB_ANALY_TOKEN || ''),
   IS_TELEGRAM: getTelegramConfigValue(import.meta.env.VITE_IS_TELEGRAM || ''),
   GOOGLE_AD_CLIENT: getStringConfigValue('GOOGLE_AD_CLIENT', import.meta.env.VITE_GOOGLE_AD_CLIENT || ''),

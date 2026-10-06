@@ -20,6 +20,10 @@
 - fix: |Frontend| 生产构建刷新页面后不加载账户设置：启动加载在 store 同步 `session` 之前运行，`getUserSettings()` 读不到令牌便直接返回、不发请求，角色和管理入口要等进过一次账户页才出现（开发模式下 effect 执行两次，掩盖了这个问题）。现在由 store 加载账户并显式传入令牌
 - fix: |Frontend| 启动时的账户加载不再吞掉错误：加载失败显示「账户加载失败」并可重试，不再显示成「还没有邮箱」
 
+### Improvements
+
+- docs: |文档| 删除前端变量 `VITE_DEFAULT_LANG`（`app-config` 中的 `DEFAULT_LANG`）：v1.13.0 将界面固定为中文后前端已不再读取它，文档却仍写着可选 `zh`、`en`、`es` 等六种语言。前端变量说明、手动 ZIP 部署与 CLI 部署文档不再列出这一项，并注明旧配置可直接删除；`APP_CONFIG`、类型声明与 `.env.example` 中的定义一并删除。Worker 变量 `DEFAULT_LANG` 不受影响
+
 ### Testing
 
 - test: |e2e| browser 用例按 React + HeroUI 重写：收件箱、打开即已读、管理端访问控制、自定义子域名、账户页新建邮箱的归属；尚未移植的功能（发信、回复、Passkey、兑换码、Webhook、数据库容量、地址分页）的用例暂时跳过
