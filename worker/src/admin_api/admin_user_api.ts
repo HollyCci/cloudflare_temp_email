@@ -100,13 +100,15 @@ export default {
         const { user_id } = c.req.param();
         const msgs = i18n.getMessagesbyContext(c);
         if (!user_id) return c.text(msgs.UserNotFoundMsg, 400);
-        const { success } = await c.env.DB.prepare(
-            `DELETE FROM users WHERE id = ?`
-        ).bind(user_id).run();
-        const { success: addressSuccess } = await c.env.DB.prepare(
-            `DELETE FROM users_address WHERE user_id = ?`
-        ).bind(user_id).run();
-        if (!success || !addressSuccess) {
+        // User ids are reused once the highest one is deleted, so nothing the account owned may
+        // outlive it: the next account to take the id would inherit its role, passkeys and mailboxes.
+        const results = await c.env.DB.batch([
+            `DELETE FROM users_address WHERE user_id = ?`,
+            `DELETE FROM user_roles WHERE user_id = ?`,
+            `DELETE FROM user_passkeys WHERE user_id = ?`,
+            `DELETE FROM users WHERE id = ?`,
+        ].map((sql) => c.env.DB.prepare(sql).bind(user_id)));
+        if (results.some((result) => !result.success)) {
             return c.text(msgs.FailedDeleteUserMsg, 500)
         }
         return c.json({ success: true })

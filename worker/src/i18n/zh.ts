@@ -5,7 +5,7 @@ const messages: LocaleMessages = {
     InvalidMailIdMsg: "无效的邮件 ID",
     MailNotFoundMsg: "邮件不存在",
     CustomAuthPasswordMsg: "你已启用私有站点密码,请提供密码",
-    UserTokenExpiredMsg: "您的令牌已过期, 请重新登录",
+    UserTokenInvalidMsg: "登录已失效，请重新登录",
     UserAcceesTokenExpiredMsg: "您的访问令牌已过期, 请刷新页面",
     UserRoleIsNotAdminMsg: "您的用户角色不是管理员, 无权访问",
     AdminLoginRequiredMsg: "请使用管理员账号登录后访问",

@@ -81,20 +81,40 @@ export const staleAccessTokenResponse = (c: Context<HonoCustomType>): Response =
 }, 401);
 
 /**
- * Bind `x-user-token` to the request. A token that is presented must be usable; the caller is
- * left anonymous only when no token was presented and the route allows it.
+ * Every unusable account token has the same cure — sign in again — so expired, forged and
+ * orphaned tokens share one answer, which the frontend acts on by signing the account out.
+ */
+export const userTokenInvalidResponse = (c: Context<HonoCustomType>): Response => c.json({
+    code: ErrorCode.AUTH_USER_TOKEN_INVALID,
+    message: i18n.getMessagesbyContext(c).UserTokenInvalidMsg,
+}, 401);
+
+/**
+ * A verified token still has to name a live account. User ids are reused once the highest one is
+ * deleted, so the id alone could point a deleted account's token at whoever registered next;
+ * the email, which is unique, has to match as well.
+ */
+const accountExists = async (c: Context<HonoCustomType>, user: UserPayload): Promise<boolean> => Boolean(
+    await c.env.DB.prepare(
+        `SELECT id FROM users WHERE id = ? AND user_email = ?`
+    ).bind(user.user_id, user.user_email).first<number>('id')
+);
+
+/**
+ * Bind `x-user-token` to the request. A token that is presented must be usable and name a live
+ * account; the caller is left anonymous only when no token was presented and the route allows it.
  */
 export const applyUserIdentity = async (
     c: Context<HonoCustomType>,
     options: { required: boolean },
 ): Promise<Response | void> => {
     const credential = await readUserToken(c);
-    if (credential.state === 'ok') {
+    if (credential.state === 'absent' && !options.required) return;
+    if (credential.state === 'ok' && await accountExists(c, credential.payload)) {
         c.set('userPayload', credential.payload);
         return;
     }
-    if (credential.state === 'absent' && !options.required) return;
-    return c.text(i18n.getMessagesbyContext(c).UserTokenExpiredMsg, 401);
+    return userTokenInvalidResponse(c);
 };
 
 /**
