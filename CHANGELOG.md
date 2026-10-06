@@ -6,6 +6,12 @@
   <a href="CHANGELOG_EN.md">English</a>
 </p>
 
+## v1.13.3(main)
+
+### Features
+
+- feat: |Admin| 地址列表显示归属账户邮箱，未绑定显示「未绑定」
+
 ## v1.13.2
 
 ### Breaking Changes

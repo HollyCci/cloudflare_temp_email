@@ -28,7 +28,8 @@ const listAddresses = async (c: Context<HonoCustomType>) => {
         return await handleListQuery(c,
             `SELECT a.*,`
             + ` (SELECT COUNT(*) FROM raw_mails WHERE address = a.name) AS mail_count,`
-            + ` (SELECT COUNT(*) FROM sendbox WHERE address = a.name) AS send_count`
+            + ` (SELECT COUNT(*) FROM sendbox WHERE address = a.name) AS send_count,`
+            + ` (SELECT u.user_email FROM users_address ua JOIN users u ON u.id = ua.user_id WHERE ua.address_id = a.id) AS owner_email`
             + ` FROM address a`
             + ` where ${whereClause}`,
             `SELECT count(*) as count FROM address where ${whereClause}`,
@@ -38,7 +39,8 @@ const listAddresses = async (c: Context<HonoCustomType>) => {
     return await handleListQuery(c,
         `SELECT a.*,`
         + ` (SELECT COUNT(*) FROM raw_mails WHERE address = a.name) AS mail_count,`
-        + ` (SELECT COUNT(*) FROM sendbox WHERE address = a.name) AS send_count`
+        + ` (SELECT COUNT(*) FROM sendbox WHERE address = a.name) AS send_count,`
+        + ` (SELECT u.user_email FROM users_address ua JOIN users u ON u.id = ua.user_id WHERE ua.address_id = a.id) AS owner_email`
         + ` FROM address a`,
         `SELECT count(*) as count FROM address`,
         [], limit, offset, orderBy, ['password']

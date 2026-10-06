@@ -134,8 +134,8 @@ function AdminConsole() {
                     <Envelope />
                     <div className="flex min-w-0 flex-col">
                       <ListView.Title>{row.name}</ListView.Title>
-                      <ListView.Description>
-                        {row.mail_count || 0} mail
+                      <ListView.Description className="truncate">
+                        {row.owner_email || t('unbound')} · {row.mail_count || 0} mail
                       </ListView.Description>
                     </div>
                   </ListView.ItemContent>

@@ -6,6 +6,12 @@
   <a href="CHANGELOG_EN.md">English</a>
 </p>
 
+## v1.13.3(main)
+
+### Features
+
+- feat: |Admin| Show the bound account email on the address list; unbound rows show "Unbound"
+
 ## v1.13.2
 
 ### Breaking Changes

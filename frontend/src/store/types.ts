@@ -69,6 +69,7 @@ export type BoundAddress = {
   name: string
   mail_count?: number
   send_count?: number
+  owner_email?: string | null
   created_at?: string
   updated_at?: string
 }
