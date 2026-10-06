@@ -12,6 +12,10 @@
 
 - breaking: |Telegram| Remove the Telegram Mini App. The frontend has had no Mini App pages since the React rewrite in v1.13.0: `VITE_IS_TELEGRAM` was no longer read, and both the "Mini App" that CI deployed to `TG_FRONTEND_NAME` and the `telegram-frontend.zip` release asset were the plain inbox; with a Mini App URL configured, the "View Mail" button on the bot's mail messages opened that plain inbox too, without the mail. Removed: the Worker's Mini App API (`/telegram/get_bind_address`, `new_address`, `bind_address`, `unbind_address`, `get_mail`), `miniAppUrl` in the Telegram settings and the "View Mail" button, plus the frontend `/telegram_mail` route, the `build:telegram*`/`deploy:*telegram` scripts, their CI jobs and `telegram-frontend.zip`; the bot's welcome text and its truncation and parse-failure hints now point to the web mailbox. Bot commands and mail push are unaffected; deployments still running a Mini App frontend from v1.12 or earlier lose it once the Worker is upgraded
 
+### Features
+
+- feat: |Admin| Show the bound account email on the address list; unbound rows show "Unbound"
+
 ### Bug Fixes
 
 - fix: |CI| Remove the PR Agent workflow (`.github/workflows/pr_agent.yml`): this repository has no `OPENAI_KEY`, so it failed on every pull request with an OpenAI authentication error and left a "Failed to generate code suggestions for PR" comment
