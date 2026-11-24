@@ -1,12 +1,14 @@
-import { ArrowRotateRight } from '@gravity-ui/icons'
-import { ScrollShadow, SearchField, Spinner, Tooltip } from '@heroui/react'
+import { ArrowRotateRight, Copy } from '@gravity-ui/icons'
+import { ScrollShadow, SearchField, Spinner, toast, Tooltip } from '@heroui/react'
 import { AppLayout } from '@heroui-pro/react'
 import type { Mail } from '../store/types'
 import { useI18n } from '../i18n'
+import { copyText } from '../utils/hash'
 import { ActionButton } from './ActionButton'
 import { MailListItem } from './MailListItem'
 
 export function MailList({
+  address,
   loading,
   mails,
   query,
@@ -15,6 +17,7 @@ export function MailList({
   onRefresh,
   onSelect,
 }: {
+  address?: string
   loading?: boolean
   mails: Mail[]
   query: string
@@ -42,6 +45,26 @@ export function MailList({
             <SearchField.ClearButton />
           </SearchField.Group>
         </SearchField>
+        {address ? (
+          <Tooltip>
+            <Tooltip.Trigger>
+              <ActionButton
+                isIconOnly
+                confirm
+                aria-label={t('copyAddress')}
+                size="sm"
+                variant="ghost"
+                onPress={async () => {
+                  await copyText(address)
+                  toast(t('copied'))
+                }}
+              >
+                <Copy className="size-4" />
+              </ActionButton>
+            </Tooltip.Trigger>
+            <Tooltip.Content>{t('copyAddress')}</Tooltip.Content>
+          </Tooltip>
+        ) : null}
         <Tooltip>
           <Tooltip.Trigger>
             <ActionButton

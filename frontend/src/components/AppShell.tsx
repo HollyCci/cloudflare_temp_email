@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import {
+  Book,
   Envelope,
   Gear,
   Moon,
@@ -146,6 +147,7 @@ function MailSidebar({
     { href: withLocale('/user', locale), icon: Person, id: 'account', label: t('account'), current: currentPath === '/user' },
     // Admin console is role-gated; only render the entry when the account holds the admin role.
     ...(isAdmin ? [{ href: withLocale('/admin', locale), icon: Gear, id: 'admin', label: t('admin'), current: currentPath === '/admin' }] : []),
+    { href: withLocale('/docs', locale), icon: Book, id: 'docs', label: t('apiDocs'), current: currentPath === '/docs' },
   ]
 
   return (

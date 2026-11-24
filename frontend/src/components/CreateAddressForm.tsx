@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router'
 import {
   Button,
   Description,
@@ -15,7 +16,9 @@ import {
 import { api } from '../api/client'
 import { useAppState } from '../store/app-store'
 import { useI18n } from '../i18n'
-import { copyText, randomLocalPart } from '../utils/hash'
+import { withLocale } from '../i18n/locale'
+import { copyText } from '../utils/hash'
+import { readableName } from '../utils/readable-name'
 import { ActionButton } from './ActionButton'
 import { Turnstile } from './Turnstile'
 
@@ -40,7 +43,8 @@ export function CreateAddressForm({
   mode: 'user' | 'admin'
   onCreated?: (created: Created) => void
 }) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
+  const navigate = useNavigate()
   const { openSettings, setJwt, invalidateAddressSwitch } = useAppState()
   const [name, setName] = useState('')
   const [domain, setDomain] = useState('')
@@ -57,7 +61,7 @@ export function CreateAddressForm({
 
   const submit = async () => {
     const customNameOff = openSettings.disableCustomAddressName
-    const localPart = customNameOff ? randomLocalPart(12) : name.trim()
+    const localPart = customNameOff ? readableName() : name.trim()
     if (!selectedDomain || !localPart) {
       toast(t('fillFields'), { variant: 'danger' })
       return false
@@ -172,7 +176,7 @@ export function CreateAddressForm({
         {openSettings.disableCustomAddressName ? null : (
           <Button
             variant="outline"
-            onPress={() => setName(randomLocalPart(10))}
+            onPress={() => setName(readableName())}
           >
             {t('randomName')}
           </Button>
@@ -190,7 +194,18 @@ export function CreateAddressForm({
                 <Modal.Heading>{t('addressCredential')}</Modal.Heading>
               </Modal.Header>
               <Modal.Body className="flex flex-col gap-3">
-                <p className="text-sm">{created?.address}</p>
+                <p className="text-sm break-all">{created?.address}</p>
+                {created?.address ? (
+                  <ActionButton
+                    confirm
+                    onPress={async () => {
+                      await copyText(created.address)
+                      toast(t('copied'))
+                    }}
+                  >
+                    {t('copyAddress')}
+                  </ActionButton>
+                ) : null}
                 {created?.jwt ? (
                   <ActionButton
                     confirm
@@ -205,6 +220,9 @@ export function CreateAddressForm({
                 ) : null}
               </Modal.Body>
               <Modal.Footer>
+                <Button variant="ghost" onPress={() => navigate(withLocale('/docs', locale))}>
+                  {t('openApiDocs')}
+                </Button>
                 <Button slot="close" variant="outline">{t('close')}</Button>
               </Modal.Footer>
             </Modal.Dialog>

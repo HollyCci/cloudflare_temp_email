@@ -9,6 +9,7 @@ import { APP_CONFIG } from './config'
 import { InboxPage } from './pages/InboxPage'
 import { UserPage } from './pages/UserPage'
 import { AdminPage } from './pages/AdminPage'
+import { DocsPage } from './pages/DocsPage'
 import './styles.css'
 
 function LocaleGate({ children }: { children: React.ReactNode }) {
@@ -65,12 +66,15 @@ function AppRoutes() {
       <Route path="/" element={<InboxPage />} />
       <Route path="/user" element={<UserPage />} />
       <Route path="/admin" element={<AdminPage />} />
+      <Route path="/docs" element={<DocsPage />} />
       <Route path="/en" element={<Navigate replace to="/" />} />
       <Route path="/zh" element={<Navigate replace to="/" />} />
       <Route path="/en/user" element={<Navigate replace to="/user" />} />
       <Route path="/zh/user" element={<Navigate replace to="/user" />} />
       <Route path="/en/admin" element={<Navigate replace to="/admin" />} />
       <Route path="/zh/admin" element={<Navigate replace to="/admin" />} />
+      <Route path="/en/docs" element={<Navigate replace to="/docs" />} />
+      <Route path="/zh/docs" element={<Navigate replace to="/docs" />} />
       <Route path="*" element={<Navigate replace to="/" />} />
     </Routes>
   )

@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { ArrowLeft, ArrowRight, ChevronLeft, TrashBin, Tray, Xmark } from '@gravity-ui/icons'
 import { Button, ScrollShadow, Tooltip } from '@heroui/react'
 import type { Mail } from '../store/types'
@@ -32,7 +31,6 @@ export function MailDetail({
 }) {
   const { t } = useI18n()
   const sender = parseSender(mail.sender || mail.source)
-  const [allowRemote, setAllowRemote] = useState(false)
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col overflow-clip lg:py-4 lg:pl-0.5 lg:pr-4">
@@ -72,11 +70,6 @@ export function MailDetail({
                 <Tooltip.Content>{t('delete')}</Tooltip.Content>
               </Tooltip>
             ) : null}
-            {allowRemote ? null : (
-              <Button size="sm" variant="ghost" onPress={() => setAllowRemote(true)}>
-                {t('loadImages')}
-              </Button>
-            )}
           </div>
           <div className="flex items-center gap-4 px-2">
             <span className="text-muted text-xs tabular-nums">
@@ -129,7 +122,7 @@ export function MailDetail({
             </div>
             <div>
               {mail.html || mail.message ? (
-                <MailHtml allowRemote={allowRemote} html={mail.html || mail.message || ''} isDark={isDark} />
+                <MailHtml html={mail.html || mail.message || ''} isDark={isDark} />
               ) : (
                 <div className="text-foreground whitespace-pre-wrap text-sm leading-relaxed">
                   {mail.text || ''}

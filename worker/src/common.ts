@@ -9,7 +9,7 @@ import { AddressCreationSettings, AdminWebhookSettings, ExtractResult, WebhookMa
 import i18n from './i18n';
 import { formatWebhookBody, getWebhookAttachments } from './utils/webhook';
 
-const DEFAULT_NAME_REGEX = /[^a-z0-9]/g;
+const DEFAULT_NAME_REGEX = /[^a-z0-9-]/g;
 const DEFAULT_RANDOM_SUBDOMAIN_LENGTH = 8;
 const MAX_RANDOM_SUBDOMAIN_ATTEMPTS = 5;
 const MAX_DOMAIN_LENGTH = 253;
@@ -72,29 +72,36 @@ export const isAnySendMailEnabled = (c: Context<HonoCustomType>): boolean => {
     return domains.some(domain => isSendMailEnabled(c, domain));
 }
 
+const READABLE_ADJECTIVES = [
+    "amber", "brisk", "calm", "clear", "cool", "crisp", "fair", "fast",
+    "glad", "gold", "green", "happy", "kind", "light", "lucky", "mild",
+    "neat", "nova", "plain", "quick", "quiet", "rapid", "rosy", "shiny",
+    "silver", "slim", "soft", "sunny", "swift", "tidy", "warm", "wild",
+];
+const READABLE_NOUNS = [
+    "apple", "birch", "brook", "cedar", "cloud", "coral", "creek", "daisy",
+    "ember", "fern", "field", "flint", "frost", "hazel", "heron", "honey",
+    "lake", "maple", "meadow", "mist", "moss", "otter", "pebble", "pine",
+    "pond", "quartz", "raven", "river", "robin", "stone", "storm", "willow",
+];
+const READABLE_SUFFIX = "abcdefghjkmnpqrstuvwxyz23456789";
+
+const pickReadable = (choices: string): string => {
+    const index = crypto.getRandomValues(new Uint8Array(1))[0] % choices.length;
+    return choices[index];
+};
+
 export const generateRandomName = (c: Context<HonoCustomType>): string => {
-    // name min length min 1
-    const minLength = Math.max(
-        getIntValue(c.env.MIN_ADDRESS_LEN, 1),
-        1
-    );
-    // name max length min 1
-    const maxLength = Math.max(
-        getIntValue(c.env.MAX_ADDRESS_LEN, 30),
-        1
-    );
-
-    // Build full name recursively until minimum length is reached
-    const buildName = (currentName: string = ""): string => {
-        return currentName.length >= minLength
-            ? currentName
-            : buildName(currentName + Math.random().toString(36).substring(2, 15));
-    };
-
-    const fullName = buildName();
-
-    // Return truncated to max length
-    return fullName.substring(0, Math.min(fullName.length, maxLength));
+    const minLength = Math.max(getIntValue(c.env.MIN_ADDRESS_LEN, 1), 1);
+    const maxLength = Math.max(getIntValue(c.env.MAX_ADDRESS_LEN, 30), 1);
+    const adjective = READABLE_ADJECTIVES[crypto.getRandomValues(new Uint8Array(1))[0] % READABLE_ADJECTIVES.length];
+    const noun = READABLE_NOUNS[crypto.getRandomValues(new Uint8Array(1))[0] % READABLE_NOUNS.length];
+    let name = `${adjective}-${noun}-${pickReadable(READABLE_SUFFIX)}${pickReadable(READABLE_SUFFIX)}`;
+    while (name.length < minLength && name.length < maxLength) {
+        name += pickReadable(READABLE_SUFFIX);
+    }
+    if (name.length <= maxLength) return name;
+    return name.substring(0, maxLength).replace(/-+$/, "");
 };
 
 const generateRandomSubdomain = (c: Context<HonoCustomType>): string => {
@@ -372,7 +379,8 @@ export const newAddress = async (
 ): Promise<{ address: string, jwt: string, password?: string | null, address_id: number }> => {
     const msgs = i18n.getMessagesbyContext(c);
     // trim whitespace and remove special characters
-    name = name.trim().replace(getNameRegex(c), '')
+    name = name.trim().toLowerCase().replace(getNameRegex(c), '')
+    name = name.replace(/^-+|-+$/g, '').replace(/-{2,}/g, '-')
     // check name
     if (enableCheckNameRegex) {
         await checkNameBlockList(c, name);

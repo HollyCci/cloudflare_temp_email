@@ -18,12 +18,6 @@ export const utcToLocalDate = (utcDate: string | null | undefined, useUTCDate = 
   return utcDateString
 }
 
-export const randomLocalPart = (maxLen = 12) => {
-  const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789'
-  const bytes = crypto.getRandomValues(new Uint8Array(maxLen))
-  return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join('')
-}
-
 export const copyText = async (value: string) => {
   await navigator.clipboard.writeText(value)
 }

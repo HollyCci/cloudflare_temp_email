@@ -20,7 +20,7 @@ export function InboxPage() {
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const {
-    jwt, setJwt, theme, openSettings, setAddressSettings, userJwt, addresses, addressesFetched,
+    jwt, setJwt, theme, openSettings, addressSettings, setAddressSettings, userJwt, addresses, addressesFetched,
     switchingAddress, addressOpenFailed, inboxEpoch, openMailbox, finishAddressSwitch, invalidateAddressSwitch,
     addressesError, loadAccount,
   } = useAppState()
@@ -193,6 +193,7 @@ export function InboxPage() {
           }`}
         >
           <MailList
+            address={switchingAddress || addressSettings.address}
             loading={listBusy}
             mails={visibleMails}
             query={query}

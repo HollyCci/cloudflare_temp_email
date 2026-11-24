@@ -231,6 +231,17 @@ export function UserPage() {
                           size="sm"
                           variant="ghost"
                           onPress={async () => {
+                            await copyText(row.name)
+                            toast(t('copied'))
+                          }}
+                        >
+                          {t('copyAddress')}
+                        </ActionButton>
+                        <ActionButton
+                          confirm
+                          size="sm"
+                          variant="ghost"
+                          onPress={async () => {
                             try {
                               const res = await api.fetch(`/user_api/bind_address_jwt/${row.id}`)
                               await copyText(res.jwt)

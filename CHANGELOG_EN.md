@@ -11,6 +11,13 @@
 ### Features
 
 - feat: |Admin| Show the bound account email on the address list; unbound rows show "Unbound"
+- feat: |Frontend| Add Copy address on create, inbox, account, and the admin address list
+- feat: |Frontend| Add an API page explaining how an address credential calls the mailbox endpoints
+- fix: |Mail| Load remote images when a message opens and remove the Load remote images button; tracking pixels are requested with the images
+- fix: |Frontend| The inbox no longer shows the current address as a fake input row; copy sits on a button beside search
+- fix: |Frontend| The API page uses HeroUI Pro Markdown and code blocks, with copy on the code block
+- fix: |Mailbox| Random local parts are now adjective-noun-suffix names such as calm-river-k7 instead of an unreadable random string
+- fix: |Frontend| Move API docs to the bottom of the sidebar menu
 
 ## v1.13.2
 
